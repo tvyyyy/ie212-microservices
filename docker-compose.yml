@@ -1,0 +1,3 @@
+# Khung P1: chưa triển khai MinIO, Spark hoặc Iceberg catalog.
+# Bổ sung image/version/volumes sau khi xác minh tài nguyên và tương thích.
+services: {}

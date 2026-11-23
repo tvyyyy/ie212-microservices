@@ -1,0 +1,3 @@
+# Khung P1: chưa pin phiên bản, chưa phải môi trường cài đặt hoàn chỉnh.
+# Cần kiểm tra: pyspark, duckdb, pandas, pyarrow, lightgbm, scikit-learn,
+# networkit hoặc GraphFrames; cùng thư viện dashboard và pytest.

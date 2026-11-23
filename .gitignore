@@ -1,0 +1,36 @@
+# Python / tooling
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+.DS_Store
+.env
+.env.*
+!.env.example
+# Local raw/sample data and generated artifacts; keep structure only
+data/raw/*
+!data/raw/.gitkeep
+data/sample/*
+!data/sample/.gitkeep
+artifacts/**/*
+!artifacts/**/
+!artifacts/**/.gitkeep
+# Generated LaTeX files
+docs/*.aux
+docs/*.log
+docs/*.out
+docs/*.toc
+docs/*.lof
+docs/*.lot
+docs/*.bbl
+docs/*.blg
+docs/*.fls
+docs/*.fdb_latexmk
+docs/*.synctex.gz
+
+# Metadata and planning files are managed outside the repository in ../context
+/metadata.txt
+/docs/IE212_ke_hoach.xlsx
+/docs/IE212_cau_truc_thu_muc.xlsx
