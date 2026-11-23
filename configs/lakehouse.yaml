@@ -1,3 +1,3 @@
-# Catalog Iceberg, Bronze/Silver/Gold và phân vùng
-# Khung cấu hình: chưa triển khai; điền schema cấu hình cùng stage tương ứng.
+# Iceberg catalog, Bronze/Silver/Gold layers, and partitioning
+# Configuration scaffold: not yet implemented; define the schema with the corresponding stage.
 {}

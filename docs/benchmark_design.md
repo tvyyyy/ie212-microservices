@@ -1,5 +1,5 @@
-# Thiết kế benchmark
+# Benchmark Design
 
-Chưa chạy. So Spark/DuckDB/Pandas trên aggregate metrics, join tài nguyên và aggregate edges. Mức 10/25/50/100% của input công bố; ít nhất 3 lần; kiểm tra tương đương, materialization, cache, RAM, spill/NA và OOM.
+Benchmarks have not yet been executed. Compare Spark, DuckDB, and Pandas on metric aggregation, resource joins, and service-edge aggregation at 10/25/50/100% of the declared input. Execute each configuration at least three times. Document output equivalence, result materialization, cache policy, memory usage, spill (or NA when unavailable), and out-of-memory outcomes.
 
-Căn cứ: [metadata gốc](D:/IE212/Project/context/metadata.txt) và [hướng dẫn](../agents_ie212.md).
+Sources: [authoritative project specification](D:/IE212/Project/context/metadata.txt) and [implementation guidance](D:/IE212/Project/context/agents_ie212.md).

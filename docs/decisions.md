@@ -1,15 +1,15 @@
-# Nhật ký quyết định
+# Decision Log
 
-## 23/11/2026 - Cấu trúc tài liệu
+## 23 November 2026 — Documentation Structure
 
-- Metadata là nguồn phạm vi chuẩn.
-- Dùng docs/ phẳng; không tách report/chapters.
-- Nhóm có LaTeX sẵn: chưa tạo file .tex; nhóm bổ sung docs/main.tex.
-- reports/ giữ hình/bảng phân tích; artifacts/ giữ đầu ra chạy.
-- Đây là skeleton, chưa triển khai pipeline hoặc chạy thực nghiệm.
+- The authoritative metadata define the project scope.
+- Maintain a flat `docs/` directory without separate report or chapter directories.
+- The team has an existing LaTeX template. No `.tex` file has been created; the team will supply `docs/main.tex`.
+- Store analytical figures and tables in `reports/`, and generated run outputs in `artifacts/`.
+- The repository is a scaffold; no pipeline implementation or experiments have been completed.
 
-## 23/11/2026 - Tập trung tài liệu nguồn
+## 23 November 2026 — Source Document Management
 
-- Chỉ dùng metadata từ `D:\IE212\Project\context\metadata.txt`; bỏ bản sao trong repo.
-- Hai file XLSX chỉ giữ trong context; không còn trong docs.
-- Xóa output/outputs cũ theo yêu cầu; không dùng PDF đã xóa làm nguồn phạm vi.
+- Use only the authoritative metadata at `D:\IE212\Project\context\metadata.txt`; the repository copy has been removed.
+- Keep both planning and repository-structure workbooks in the external `context/` directory, outside `docs/`.
+- The previous `output/` and `outputs/` directories were removed as requested. Deleted PDFs must not be used to define the project scope.

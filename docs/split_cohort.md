@@ -1,5 +1,5 @@
-# Chia tập và cohort
+# Temporal Splits and Evaluation Cohort
 
-Chưa tạo dataset. Chia theo thời điểm nhãn, dự kiến 70/15/15; cùng cohort A/B/C; snapshot Train phải sẵn có tại forecast origin.
+The analytical dataset has not yet been constructed. Split observations by target timestamp, with a proposed Train/Validation/Test ratio of 70/15/15. Use a common cohort for A/B/C comparisons. The training graph snapshot must be available at the forecast origin.
 
-Căn cứ: [metadata gốc](D:/IE212/Project/context/metadata.txt) và [hướng dẫn](../agents_ie212.md).
+Sources: [authoritative project specification](D:/IE212/Project/context/metadata.txt) and [implementation guidance](D:/IE212/Project/context/agents_ie212.md).

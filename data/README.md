@@ -1,3 +1,3 @@
-# Dữ liệu cục bộ
+# Local Data
 
-`raw/` lưu bản tải bất biến, `sample/` lưu mẫu phát triển. Chưa có dữ liệu. Không commit dữ liệu thật; lưu nguồn, checksum và manifest. Hướng dẫn tải được bổ sung sau khảo sát P0 theo metadata.
+`raw/` stores immutable downloaded inputs, while `sample/` stores development samples. No data have been acquired yet. Actual datasets must not be committed; record their sources, checksums, and manifests. Acquisition instructions will be added after the P0 assessment, in accordance with the authoritative project specification.

@@ -1,5 +1,5 @@
-# Kế hoạch lấy mẫu
+# Sampling Plan
 
-Chưa chốt quy mô. Dùng băm traceid xác định, gom đủ bản ghi qua file; ghi seed, tỷ lệ, manifest/checksum và ước lượng dung lượng.
+The sample size has not yet been determined. Use deterministic hashing of `traceid` and collect all related records across files. Record the seed, sampling fraction, manifests, checksums, and estimated storage requirements.
 
-Căn cứ: [metadata gốc](D:/IE212/Project/context/metadata.txt) và [hướng dẫn](../agents_ie212.md).
+Sources: [authoritative project specification](D:/IE212/Project/context/metadata.txt) and [implementation guidance](D:/IE212/Project/context/agents_ie212.md).

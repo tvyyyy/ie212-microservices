@@ -1,1 +1,1 @@
-"""Khung package IE212; logic sẽ được triển khai theo từng stage."""
+"""IE212 package scaffold; implementation will be added for each pipeline stage."""

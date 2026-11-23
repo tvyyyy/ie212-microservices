@@ -1,5 +1,5 @@
-# Tài nguyên thực nghiệm
+# Experimental Resources
 
-Chưa đo. Cần ghi OS, CPU/lõi, RAM, disk trống, phiên bản Spark/Python và giới hạn tài nguyên.
+Resource assessment has not yet been performed. Record the operating system, CPU and core count, RAM, available disk space, Spark and Python versions, and experimental resource limits.
 
-Căn cứ: [metadata gốc](D:/IE212/Project/context/metadata.txt) và [hướng dẫn](../agents_ie212.md).
+Sources: [authoritative project specification](D:/IE212/Project/context/metadata.txt) and [implementation guidance](D:/IE212/Project/context/agents_ie212.md).
