@@ -4,7 +4,10 @@
 
 **Authors:** 
 Nguyen Thuy Vy - 24522071
+
 Tran Ngoc Gia Huy - 24520703
+
+**Final presentation:** 17 December 2026
 
 ## Overview
 
