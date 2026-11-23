@@ -2,9 +2,9 @@
 
 **IE212 — Big Data Technologies**
 
-**Authors:** Huy and Vy
-
-**Final presentation:** 17 December 2026
+**Authors:** 
+Nguyen Thuy Vy - 24522071
+Tran Ngoc Gia Huy - 24520703
 
 ## Overview
 
