@@ -1,6 +1,9 @@
 # Python / tooling
 __pycache__/
 *.py[cod]
+*.egg-info/
+build/
+dist/
 .venv/
 venv/
 .pytest_cache/
@@ -9,7 +12,8 @@ venv/
 .env
 .env.*
 !.env.example
-# Local raw/sample data and generated artifacts; keep structure only
+
+# Local raw/sample data, Lakehouse runtime artifacts, and generated outputs
 data/raw/*
 !data/raw/.gitkeep
 data/sample/*
@@ -17,7 +21,16 @@ data/sample/*
 artifacts/**/*
 !artifacts/**/
 !artifacts/**/.gitkeep
-# Generated LaTeX files
+spark-warehouse/
+metastore_db/
+derby.log
+warehouse/
+minio-data/
+*.parquet
+*.tar.gz
+*.csv.gz
+
+# Generated LaTeX files and local PDF builds
 docs/*.aux
 docs/*.log
 docs/*.out
@@ -29,8 +42,9 @@ docs/*.blg
 docs/*.fls
 docs/*.fdb_latexmk
 docs/*.synctex.gz
+docs/*.pdf
 
-# Metadata and planning files are managed outside the repository in ../context
+# External workspace context files (managed outside the repository)
 /metadata.txt
-/docs/IE212_ke_hoach.xlsx
-/docs/IE212_cau_truc_thu_muc.xlsx
+/agents_ie212.md
+*.xlsx
