@@ -1,3 +1,88 @@
-# Baselines, Ridge Regression, LightGBM, seed, and tuning budget
-# Configuration scaffold: not yet implemented; define the schema with the corresponding stage.
-{}
+# RQ2 forecasting models, tuning budget, evaluation metrics, ablation stats, and conditional extensions.
+run:
+  seed: 42
+  artifacts_models_dir: "artifacts/models"
+  artifacts_predictions_dir: "artifacts/predictions"
+  reports_tables_dir: "reports/tables"
+  prediction_columns:
+    - "run_id"
+    - "service_id"
+    - "forecast_origin_minute"
+    - "target_minute"
+    - "split"
+    - "model_name"
+    - "feature_set"
+    - "y_true_mean_rpc_rt_ms"
+    - "y_pred_mean_rpc_rt_ms"
+    - "quality_flags"
+
+models:
+  persistence:
+    enabled: true
+    feature_sets: ["baseline"]
+    params: {}
+
+  moving_average:
+    enabled: true
+    feature_sets: ["baseline"]
+    window_minutes: [5, 15, 30]
+
+  ridge:
+    enabled: true
+    feature_sets: ["A", "B", "C"]
+    preprocessing:
+      imputer: "median"
+      scaler: "standard"
+      fit_on: "train_only"
+    alphas: [0.01, 0.1, 1.0, 10.0, 100.0]
+
+  lightgbm:
+    enabled: true
+    feature_sets: ["A", "B", "C"]
+    fixed_params:
+      objective: "regression_l1"
+      random_state: 42
+      n_jobs: -1
+      verbose: -1
+    tuning:
+      enabled: true
+      selection_split: "validation"
+      selection_metric: "mae"
+      max_trials: 30
+      equal_budget_across_feature_sets: true
+      search_space:
+        num_leaves: [15, 31, 63]
+        learning_rate: [0.03, 0.05, 0.1]
+        n_estimators: [100, 300, 500]
+        min_child_samples: [10, 20, 50]
+        subsample: [0.8, 1.0]
+        colsample_bytree: [0.8, 1.0]
+
+evaluation:
+  primary_metrics: ["MAE", "RMSE"]
+  aggregations: ["pooled", "per_service_macro"]
+  ablation:
+    pairs:
+      - ["A", "B"]
+      - ["B", "C"]
+      - ["A", "C"]
+    delta_formula: "metric_baseline - metric_extended"
+    statistical_tests:
+      wilcoxon_signed_rank: true
+      correction: "holm"
+      alpha: 0.05
+      compute_effect_size: true
+      paired_unit: "service_id"
+
+conditional_extensions:
+  p95_call_latency:
+    enabled: false
+    source_table: "silver.ms_call_graph"
+    min_calls_per_service_minute: 20
+    min_coverage_ratio: 0.50
+    forbid_deriving_from_container_mean: true
+  latency_threshold_alerts:
+    enabled: false
+    terminology: "hypothetical_slo_threshold"
+    forbid_claiming_alibaba_sla: true
+    metrics: ["PR-AUC", "precision", "recall", "F1", "alert_rate"]

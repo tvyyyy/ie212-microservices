@@ -21,6 +21,8 @@ data/sample/*
 artifacts/**/*
 !artifacts/**/
 !artifacts/**/.gitkeep
+!artifacts/manifest/
+!artifacts/manifest/*.json
 spark-warehouse/
 metastore_db/
 derby.log

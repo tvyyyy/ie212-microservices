@@ -1,3 +1,73 @@
-# Iceberg catalog, Bronze/Silver/Gold layers, and partitioning
-# Configuration scaffold: not yet implemented; define the schema with the corresponding stage.
-{}
+# MinIO object storage, Iceberg REST Catalog, Spark 4.1.4 + Iceberg 1.11.0, and DuckDB 2.0.1 settings.
+minio:
+  endpoint: "${MINIO_ENDPOINT:-http://minio:9000}"
+  local_endpoint: "${MINIO_LOCAL_ENDPOINT:-http://localhost:9000}"
+  access_key: "${MINIO_ACCESS_KEY:-${MINIO_ROOT_USER:-}}"
+  secret_key: "${MINIO_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-}}"
+  region: "${AWS_REGION:-us-east-1}"
+  path_style_access: true
+  use_ssl: false
+  buckets:
+    - "bronze"
+    - "silver"
+    - "gold"
+
+iceberg:
+  catalog_name: "ie212"
+  catalog_type: "rest"
+  catalog_uri: "${ICEBERG_CATALOG_URI:-http://iceberg-rest:8181}"
+  local_catalog_uri: "${ICEBERG_LOCAL_CATALOG_URI:-http://localhost:8181}"
+  warehouse: "${ICEBERG_WAREHOUSE:-s3://silver/warehouse}"
+  s3_file_io: "org.apache.iceberg.aws.s3.S3FileIO"
+  namespaces:
+    - "silver"
+    - "gold"
+
+spark:
+  version: "4.1.4"
+  master: "${SPARK_MASTER:-local[*]}"
+  app_name: "ie212-lakehouse"
+  driver_memory: "${SPARK_DRIVER_MEMORY:-2g}"
+  executor_memory: "${SPARK_EXECUTOR_MEMORY:-2g}"
+  iceberg_packages:
+    - "org.apache.iceberg:iceberg-spark-runtime-4.1_2.13:1.11.0"
+    - "org.apache.iceberg:iceberg-aws-bundle:1.11.0"
+  exclude_hadoop_aws: true
+
+duckdb:
+  version: "2.0.1"
+  attach_type: "iceberg"
+  authorization_type: "none"
+  use_ssl: false
+  url_style: "path"
+  s3_secret_name: "minio_s3"
+  parquet_fallback_dir: "artifacts/lakehouse_fallback"
+
+tables:
+  bronze:
+    node: "s3://bronze/node"
+    ms_resource: "s3://bronze/ms_resource"
+    ms_rt_qps: "s3://bronze/ms_rt_qps"
+    ms_call_graph: "s3://bronze/ms_call_graph"
+  silver:
+    node: "silver.node"
+    ms_resource: "silver.ms_resource"
+    ms_rt_qps: "silver.ms_rt_qps"
+    ms_call_graph: "silver.ms_call_graph"
+  gold:
+    trace_stats: "gold.trace_stats"
+    service_edges: "gold.service_edges"
+    service_centrality: "gold.service_centrality"
+    service_minute_index: "gold.service_minute_index"
+    service_minute_features: "gold.service_minute_features"
+
+partitioning:
+  silver:
+    node: ["minute_bucket"]
+    ms_resource: ["minute_bucket"]
+    ms_rt_qps: ["minute_bucket"]
+    ms_call_graph: ["rpctype"]
+  gold:
+    service_edges: ["snapshot_id", "rpctype"]
+    service_centrality: ["snapshot_id"]
+    service_minute_features: ["split"]

@@ -1,3 +1,122 @@
-# P1 scaffold: MinIO, Spark, and the Iceberg catalog have not yet been implemented.
-# Specify images, versions, and volumes after validating resource requirements and compatibility.
-services: {}
+services:
+  minio:
+    image: pgsty/silo:RELEASE.2026-11-12T00-00-00Z
+    container_name: ie212-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9000/minio/health/live >/dev/null 2>&1 || silo healthcheck live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  minio-init:
+    image: pgsty/silo:RELEASE.2026-11-12T00-00-00Z
+    container_name: ie212-minio-init
+    restart: "no"
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        if [ -z "$${MINIO_ROOT_USER:-}" ] || [ -z "$${MINIO_ROOT_PASSWORD:-}" ]; then
+          echo "ERROR: MINIO_ROOT_USER and MINIO_ROOT_PASSWORD must be set in .env" >&2
+          exit 1
+        fi
+        /usr/bin/mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
+        /usr/bin/mc mb --ignore-existing local/bronze
+        /usr/bin/mc mb --ignore-existing local/silver
+        /usr/bin/mc mb --ignore-existing local/gold
+
+  iceberg-rest-init:
+    image: apache/iceberg-rest-fixture@sha256:009f9f6897cc1e8fd6e8133c401c7a3e7c333c71293a621d06a71570ae989c29
+    container_name: ie212-iceberg-rest-init
+    user: "0:0"
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - "mkdir -p /data && chown -R 1000:1000 /data"
+    volumes:
+      - iceberg_rest_data:/data
+
+  iceberg-rest:
+    image: apache/iceberg-rest-fixture@sha256:009f9f6897cc1e8fd6e8133c401c7a3e7c333c71293a621d06a71570ae989c29
+    container_name: ie212-iceberg-rest
+    user: "1000:1000"
+    restart: unless-stopped
+    ports:
+      - "8181:8181"
+    depends_on:
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      iceberg-rest-init:
+        condition: service_completed_successfully
+    environment:
+      CATALOG_CATALOG__IMPL: org.apache.iceberg.jdbc.JdbcCatalog
+      CATALOG_URI: jdbc:sqlite:/data/iceberg_catalog.db?journal_mode=WAL
+      CATALOG_WAREHOUSE: ${ICEBERG_WAREHOUSE:-s3://silver/warehouse}
+      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+      CATALOG_S3_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
+      CATALOG_S3_PATH__STYLE__ACCESS: ${S3_PATH_STYLE_ACCESS:-true}
+      AWS_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY:-${MINIO_ROOT_USER:-}}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-}}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      REST_PORT: "8181"
+    volumes:
+      - iceberg_rest_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8181/v1/config || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  spark:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ie212-spark:4.1.4-iceberg1.11.0
+    container_name: ie212-spark
+    restart: unless-stopped
+    depends_on:
+      minio:
+        condition: service_healthy
+      iceberg-rest:
+        condition: service_healthy
+    ports:
+      - "4040:4040"
+    environment:
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
+      ICEBERG_CATALOG_URI: ${ICEBERG_CATALOG_URI:-http://iceberg-rest:8181}
+      ICEBERG_WAREHOUSE: ${ICEBERG_WAREHOUSE:-s3://silver/warehouse}
+      AWS_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY:-${MINIO_ROOT_USER:-}}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-}}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      S3_PATH_STYLE_ACCESS: ${S3_PATH_STYLE_ACCESS:-true}
+      SPARK_DRIVER_MEMORY: ${SPARK_DRIVER_MEMORY:-2g}
+      SPARK_EXECUTOR_MEMORY: ${SPARK_EXECUTOR_MEMORY:-2g}
+    volumes:
+      - .:/app
+    working_dir: /app
+    mem_limit: 8g
+    command: ["sleep", "infinity"]
+
+volumes:
+  minio_data:
+  iceberg_rest_data:

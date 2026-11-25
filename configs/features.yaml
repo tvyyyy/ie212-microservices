@@ -1,3 +1,75 @@
-# Next-minute weighted response-time target, A/B/C feature sets, lags, rolling windows, temporal splits, and cohort
-# Configuration scaffold: not yet implemented; define the schema with the corresponding stage.
-{}
+# Next-minute weighted response-time target, temporal split, warm-up train_only graph, and A/B/C feature sets.
+target:
+  name: "y_next_minute_mean_rpc_rt_ms"
+  rt_metric: "providerRPC_RT"
+  mcr_metric: "providerRPC_MCR"
+  formula: "mean_rt(s,t) = sum_i(providerRPC_MCR * providerRPC_RT) / sum_i(providerRPC_MCR); y(s,t) = mean_rt(s,t+1)"
+  horizon_minutes: 1
+  require_consecutive_minute: true
+  zero_denominator_policy: "null_unlabeled"
+  forbid_zero_imputation: true
+  forbid_unweighted_container_mean: true
+
+temporal_split:
+  strategy: "chronological_by_target_minute"
+  ratios:
+    train: 0.70
+    validation: 0.15
+    test: 0.15
+  total_window_minutes: 720
+  warmup_window_minutes: 180
+  common_cohort_keys:
+    - "service_id"
+    - "target_minute"
+  graph_snapshots:
+    descriptive: "descriptive_full_window"
+    predictive: "train_only"
+
+feature_sets:
+  A:
+    description: "Service history: lagged latency, traffic, own container CPU/memory, and rolling windows."
+    lags_minutes: [1, 2, 3, 5, 10, 15]
+    rolling_windows_minutes: [5, 15, 30]
+    rolling_aggregations: ["mean", "std", "max"]
+    base_columns:
+      - "mean_rpc_rt_ms"
+      - "provider_rpc_mcr"
+      - "instance_cpu_usage"
+      - "instance_memory_usage"
+
+  B:
+    extends: "A"
+    description: "A + structural centrality from train_only service dependency graph via NetworKit."
+    graph_engine: "networkit"
+    snapshot_policy: "train_only"
+    remove_self_loops: true
+    edge_weight_column: "observed_call_count"
+    unseen_service_flag: "is_unseen_in_train_graph"
+    metrics:
+      degree:
+        directed: true
+        outputs: ["in_degree", "out_degree", "total_degree"]
+      pagerank:
+        directed: true
+        damping: 0.85
+        weighted: true
+      estimate_betweenness:
+        directed: true
+        n_samples: 256
+        seed: 42
+        normalized: true
+      core_decomposition:
+        undirected: true
+        remove_self_loops: true
+
+  C:
+    extends: "B"
+    description: "B + host load and co-located container activity excluding own container/service."
+    host_aggregation_key: ["nodeid", "minute"]
+    exclude_self_container: true
+    exclude_self_service: true
+    host_to_service_weighting: "container_count_weighted"
+    require_30s_to_60s_alignment: true
+    forbidden_expressions:
+      - "node_cpu_usage - sum(instance_cpu_usage)"
+    forbidden_reason: "Alibaba Issue #119: Node bare-metal capacity denominator is incompatible with container quota denominator."
