@@ -1,3 +1,40 @@
-# Alibaba v2021 source, buckets and paths, seed, sampling fraction, and manifest
-# Configuration scaffold: not yet implemented; define the schema with the corresponding stage.
-{}
+# Alibaba cluster-trace-microservices-v2021 acquisition, sampling, and manifest configuration.
+# Locked strategy per docs/sampling_plan.md and docs/decisions.md (25 Nov 2026).
+
+dataset:
+  name: alibaba-cluster-trace-microservices-v2021
+  seed: 1217
+
+sources:
+  alibaba_oss_base_url: http://aliopentrace.oss-cn-beijing.aliyuncs.com/v2021MicroservicesTraces
+  oss_files:
+    node:
+      - node/Node_0.tar.gz
+    msresource_indices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    msrtqps_indices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+  casper_dataverse:
+    doi: "10.7910/DVN/RXIC9Z"
+    api_dataset_url: "https://dataverse.harvard.edu/api/datasets/:persistentId/?persistentId=doi:10.7910/DVN/RXIC9Z"
+    datafile_url_template: "https://dataverse.harvard.edu/api/access/datafile/{file_id}"
+    total_partitions: 1999
+
+sampling:
+  # 10% deterministic hash partitions (200 of 1,999 files -> ~2.2 GiB compressed) preserve complete traces.
+  casper_raw_fraction: 0.10
+  # Small subset for quick local unit/integration tests on dev machines.
+  casper_dev_sample_count: 5
+  # On dev machine, acquire slice 0 archives for Node, MSResource, MSRTQps (not full 12h MSResource/MSRTQps).
+  oss_dev_slice_indices:
+    node: [0]
+    msresource: [0]
+    msrtqps: [0]
+
+paths:
+  raw_root: data/raw
+  sample_root: data/sample
+  manifest_dir: artifacts/manifest
+  subfolders:
+    - node
+    - msresource
+    - msrtqps
+    - mscallgraph
