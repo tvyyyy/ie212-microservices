@@ -376,7 +376,7 @@ def select_casper_partitions(
     partition_min: int | None = None,
     partition_max: int | None = None,
     ratio: float = 0.10,
-    seed: int = 42,
+    seed: int = 1217,
     min_ratio: float = 0.10,
     max_ratio: float = 0.25,
 ) -> list[str]:

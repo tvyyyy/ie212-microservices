@@ -1,5 +1,5 @@
 # RQ3 comparative processing benchmark across Spark, DuckDB, and Pandas.
-seed: 42
+seed: 1217
 output_dir: "artifacts/benchmarks"
 
 engines:

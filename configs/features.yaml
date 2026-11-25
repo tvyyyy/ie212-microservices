@@ -56,7 +56,7 @@ feature_sets:
       estimate_betweenness:
         directed: true
         n_samples: 256
-        seed: 42
+        seed: 1217
         normalized: true
       core_decomposition:
         undirected: true

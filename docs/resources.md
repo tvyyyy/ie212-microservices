@@ -4,20 +4,28 @@ Environment inventory and hardware constraints for the IE212 Alibaba Microservic
 
 ## Host Role Assignment
 
-- **Primary Execution Host (Vy — Linux / Docker):** Planned primary host to run the Docker Compose lakehouse stack (`MinIO 9000/9001`, `Iceberg REST Catalog 8181`, `PySpark 4.1.4`), full 12-hour Bronze/Silver/Gold pipelines, RQ1 graph centrality, RQ2 training/evaluation, and all RQ3 benchmarks.
+- **Primary Execution Host (Vy — Windows 11 + Docker Linux / WSL2):** Confirmed primary host to run the Docker Compose lakehouse stack (`MinIO 9000/9001`, `Iceberg REST Catalog 8181`, `PySpark 4.1.4`), full 12-hour Bronze/Silver/Gold pipelines, RQ1 graph centrality, RQ2 training/evaluation, and all RQ3 benchmarks.
 - **Development & Unit-Test Host (Huy — Windows 11):** Used for modular pipeline development in `src/ie212/`, `pytest` unit suites, DuckDB local checks, and small-fixture idempotency validation in `uv` Python `3.12`. Full 38–41 GiB downloads and Docker/Spark containers are **not** executed on this host.
 
 ## Host Specifications
 
 ### Primary Execution Host (Vy)
 
-| Component | Confirmed Baseline | Exact Measurement |
-|---|---|---|
-| Host OS / Distro / Kernel | Docker Linux host | `[TO BE MEASURED BY VY]` |
-| CPU Model / Cores / Threads | Multi-core x86_64 | `[TO BE MEASURED BY VY]` |
-| Physical RAM (Total / Available) | `>= 16 GB` | `[TO BE MEASURED BY VY]` |
-| Disk Storage (Device / Total / Free) | `>= 100 GB` free disk | `[TO BE MEASURED BY VY]` |
-| Docker Engine / Compose Version | Docker + Compose v2 | `[TO BE MEASURED BY VY]` |
+Measured on Vy's ACER host on **25 November 2026**, confirmed by Vy during PR #3 acceptance. These are observations, not minimum-resource guarantees.
+
+| Component | Exact Measurement |
+|---|---|
+| Device | Acer Aspire AL15-41P |
+| Host OS | Windows 11 Home Single Language, version `10.0.26100` |
+| Linux backend | WSL2, Ubuntu 24.04; kernel `6.6.87.2-microsoft-standard-WSL2`; Docker Desktop Linux context `desktop-linux` |
+| CPU | AMD Ryzen 7 5700U with Radeon Graphics; 8 physical cores / 16 logical processors |
+| Physical RAM | `16,519,819,264` bytes (`15.39 GiB`); OS-visible `15.39 GiB`; available at snapshot `3.88 GiB` |
+| WSL memory | `7.4 GiB` total / `6.9 GiB` available; `2.0 GiB` swap at snapshot (Ubuntu `free -h`) |
+| Storage | C: `275.42 GiB` total / `21.80 GiB` free; D: `200.00 GiB` total / `154.18 GiB` free at snapshot |
+| Docker | Desktop `4.69.0`; CLI `29.4.0`; Compose `v5.1.1`; Linux Engine `29.4.0`, 16 CPUs, `7,998,730,240` bytes memory; startup/acceptance recorded in `decisions.md` |
+| Acceptance Python | Separate ignored `artifacts/venv-pr3`, CPython `3.12.16`; existing `.venv` was preserved |
+
+The host has nominal 16 GB RAM but only 15.39 GiB physically addressable and 7.4 GiB currently allocated to WSL. The Spark service's 8 GiB container limit exceeds that WSL memory allocation; this must be recorded as a constraint when interpreting acceptance or benchmark results. D: free space does not imply that Docker's backing virtual disk has the same free capacity; inspect Docker storage before full-data ingestion. Current acceptance uses small samples only.
 
 ### Development & Unit-Test Host (Huy — Measured 25 Nov 2026)
 

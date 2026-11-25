@@ -1,6 +1,6 @@
 # RQ2 forecasting models, tuning budget, evaluation metrics, ablation stats, and conditional extensions.
 run:
-  seed: 42
+  seed: 1217
   artifacts_models_dir: "artifacts/models"
   artifacts_predictions_dir: "artifacts/predictions"
   reports_tables_dir: "reports/tables"

@@ -1,5 +1,5 @@
 # Alibaba v2021 & CASPER Shuffled v2021 source definitions, schemas, download policy, and Bronze layout.
-seed: 42
+seed: 1217
 
 paths:
   raw_dir: "data/raw"
@@ -30,7 +30,8 @@ datasets:
       ratio: 0.10
       min_ratio: 0.10
       max_ratio: 0.25
-      seed: 42
+      seed: 1217
+      dev_sample_count: 5
     columns:
       - "traceid"
       - "timestamp"

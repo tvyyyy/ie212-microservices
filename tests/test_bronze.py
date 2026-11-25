@@ -754,7 +754,16 @@ def test_temp_tar_gz_cleanup_safety(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_s3_upload_path_style_and_missing_creds(tmp_path: Path) -> None:
+def test_s3_upload_path_style_and_missing_creds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A real Docker/CI environment may supply the supported credential fallbacks.
+    for key in (
+        "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY",
+        "MINIO_ACCESS_KEY", "MINIO_SECRET_KEY",
+        "MINIO_ROOT_USER", "MINIO_ROOT_PASSWORD",
+    ):
+        monkeypatch.delenv(key, raising=False)
     configs = load_project_configs(REPO_ROOT / "configs", environ={})
     lakehouse_no_creds = json.loads(json.dumps(configs["lakehouse"]))
     lakehouse_no_creds["minio"]["access_key"] = ""
@@ -1278,7 +1287,12 @@ def test_bounded_url_chunking_cleans_chunk_before_next_chunk(tmp_path: Path, con
                 self.end_headers()
                 return
             if self.path == f"/f{concurrency}.csv.gz" and dl_dir.exists():
-                observed_files_during_next_chunk.append(len(list(dl_dir.rglob("*.csv.gz"))))
+                # A sibling download in this same concurrent chunk may already
+                # exist. Only files from the previous chunk must be gone.
+                previous_names = {f"f{i}.csv.gz" for i in range(concurrency)}
+                observed_files_during_next_chunk.append(
+                    sum(path.name in previous_names for path in dl_dir.rglob("*.csv.gz"))
+                )
             body = payloads[self.path]
             self.send_response(200)
             self.send_header("Content-Length", str(len(body)))
@@ -1548,7 +1562,15 @@ def test_single_pass_hashing_and_strict_download_config(
         server.server_close()
 
 
-def test_prevalidate_upload_s3_before_atomic_swap_and_downloads(tmp_path: Path) -> None:
+def test_prevalidate_upload_s3_before_atomic_swap_and_downloads(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for key in (
+        "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY",
+        "MINIO_ACCESS_KEY", "MINIO_SECRET_KEY",
+        "MINIO_ROOT_USER", "MINIO_ROOT_PASSWORD",
+    ):
+        monkeypatch.delenv(key, raising=False)
     src = tmp_path / "Node_0.csv"
     src.write_text(
         ",timestamp,nodeid,node_cpu_usage,node_memory_usage\n"
