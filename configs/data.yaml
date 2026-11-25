@@ -1,3 +1,155 @@
-# Alibaba v2021 source, buckets and paths, seed, sampling fraction, and manifest
-# Configuration scaffold: not yet implemented; define the schema with the corresponding stage.
-{}
+# Alibaba v2021 & CASPER Shuffled v2021 source definitions, schemas, download policy, and Bronze layout.
+seed: 1217
+
+paths:
+  raw_dir: "data/raw"
+  sample_dir: "data/sample"
+  manifest_dir: "artifacts/manifest"
+  sample_manifest_path: "artifacts/manifest/sample_manifest.json"
+
+sources:
+  casper_dataverse:
+    doi: "10.7910/DVN/RXIC9Z"
+    citation: "Huye et al., ACM/SPEC ICPE 2024 (10.1145/3629526.3645043)"
+    dataset_url: "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/RXIC9Z"
+    api_base_url: "https://dataverse.harvard.edu/api"
+  alibaba_oss:
+    base_url: "${ALIBABA_OSS_BASE_URL:-http://aliopentrace.oss-cn-beijing.aliyuncs.com/v2021MicroservicesTraces}"
+    readme_url: "https://github.com/alibaba/clusterdata/blob/master/cluster-trace-microservices-v2021/README.md"
+
+datasets:
+  casper_mscallgraph:
+    source: "casper_dataverse"
+    description: "Trace-complete hash-shuffled MSCallGraph v2021 partitions (8 columns, no leading unnamed index)."
+    file_pattern: "partition_id=*.csv.gz"
+    total_partitions: 1999
+    partition_min: -999
+    partition_max: 999
+    sampling:
+      strategy: "deterministic_partition_subset"
+      ratio: 0.10
+      min_ratio: 0.10
+      max_ratio: 0.25
+      seed: 1217
+      dev_sample_count: 5
+    columns:
+      - "traceid"
+      - "timestamp"
+      - "rpcid"
+      - "um"
+      - "rpctype"
+      - "dm"
+      - "interface"
+      - "rt"
+    has_leading_index: false
+    timestamp_column: "timestamp"
+    timestamp_unit: "ms"
+    cadence_seconds: null
+    forbid_head_sampling: true
+    rpctypes: ["rpc", "mc", "http", "userDefined", "db", "mq"]
+    sentinels: ["(?)", "", "NAN"]
+
+  oss_node:
+    source: "alibaba_oss"
+    description: "Host-level CPU and memory utilization at 30s intervals (requires 30s->60s alignment in Silver)."
+    archive_pattern: "node/Node_{index}.tar.gz"
+    indices: [0]
+    columns:
+      - "timestamp"
+      - "nodeid"
+      - "node_cpu_usage"
+      - "node_memory_usage"
+    has_leading_index: true
+    timestamp_column: "timestamp"
+    timestamp_column_position: "first"
+    timestamp_unit: "ms"
+    cadence_seconds: 30
+    align_to_seconds: 60
+    full_12h_stream: true
+
+  oss_msresource:
+    source: "alibaba_oss"
+    description: "Container CPU/memory utilization and service/host mapping at 30s intervals (timestamp is last column)."
+    archive_pattern: "MSResource/MSResource_{index}.tar.gz"
+    indices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    columns:
+      - "msname"
+      - "msinstanceid"
+      - "nodeid"
+      - "instance_cpu_usage"
+      - "instance_memory_usage"
+      - "timestamp"
+    has_leading_index: true
+    timestamp_column: "timestamp"
+    timestamp_column_position: "last"
+    timestamp_unit: "ms"
+    cadence_seconds: 30
+    align_to_seconds: 60
+    full_12h_stream: true
+
+  oss_msrtqps:
+    source: "alibaba_oss"
+    description: "Container 60s traffic/latency metrics grouped in metric blocks (singular metric column)."
+    archive_pattern: "MSRTQps/MSRTQps_{index}.tar.gz"
+    indices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+    columns:
+      - "timestamp"
+      - "msname"
+      - "msinstanceid"
+      - "metric"
+      - "value"
+    has_leading_index: true
+    timestamp_column: "timestamp"
+    timestamp_column_position: "first"
+    timestamp_unit: "ms"
+    cadence_seconds: 60
+    forbid_head_sampling: true
+    known_anomalies:
+      - "HTTP_MCR == HTTP_RT bug (Alibaba Issue #120)"
+    full_12h_stream: true
+
+  oss_mscallgraph:
+    source: "alibaba_oss"
+    enabled_by_default: false
+    description: "Raw 5-min OSS MSCallGraph slices (fragmented traces; prefer casper_mscallgraph)."
+    archive_pattern: "MSCallGraph/MSCallGraph_{index}.tar.gz"
+    index_start: 0
+    index_end: 144
+    columns:
+      - "traceid"
+      - "timestamp"
+      - "rpcid"
+      - "um"
+      - "rpctype"
+      - "dm"
+      - "interface"
+      - "rt"
+    has_leading_index: true
+    timestamp_column: "timestamp"
+    timestamp_column_position: "second"
+    timestamp_unit: "ms"
+    cadence_seconds: null
+    forbid_head_sampling: true
+
+download:
+  max_concurrency: 2
+  retries: 5
+  backoff_seconds: 2.0
+  backoff_multiplier: 2.0
+  timeout_seconds: 60
+  chunk_size_bytes: 1048576
+  resume: true
+  cleanup_temp_archives: true
+  verify_checksums: true
+  checksum_algorithms: ["sha256", "md5"]
+
+bronze:
+  output_dir: "data/raw/bronze"
+  s3_prefix: "s3://bronze"
+  manifest_dir: "artifacts/manifest"
+  compression: "zstd"
+  fallback_compression: "snappy"
+  partition_by:
+    - "dataset"
+    - "source_file_stem"
+  idempotent_strategy: "checksum_dedup_overwrite_partition"

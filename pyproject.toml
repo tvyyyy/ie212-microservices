@@ -8,6 +8,37 @@ version = "0.1.0"
 description = "Reproducible Data Lakehouse pipeline for Alibaba microservice call-graph analysis, RPC latency forecasting, and processing engine benchmarks (IE212)."
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
+dependencies = [
+    "pandas>=2.2,<3.0",
+    "pyarrow>=18.0,<27,!=25.0.0",
+    "duckdb==2.0.1",
+    "pyspark==4.1.4",
+    "pyyaml==6.0.4",
+    "boto3==1.44.11",
+    "pytest==9.2.0",
+]
+
+[project.optional-dependencies]
+ml = [
+    "lightgbm",
+    "scikit-learn",
+    "networkit",
+    "scipy",
+]
+viz = [
+    "matplotlib",
+    "seaborn",
+    "streamlit",
+]
+all = [
+    "lightgbm",
+    "scikit-learn",
+    "networkit",
+    "scipy",
+    "matplotlib",
+    "seaborn",
+    "streamlit",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
