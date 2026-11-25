@@ -1,0 +1,94 @@
+{
+  "task": "T02",
+  "checked_on": "2026-11-26",
+  "upstream_readme_commit": "2c9879e690f478d761a76e4777fcbb451bfd10cc",
+  "upstream_readme_url": "https://github.com/alibaba/clusterdata/blob/2c9879e690f478d761a76e4777fcbb451bfd10cc/cluster-trace-microservices-v2021/README.md",
+  "observed_header_evidence": "t06_sample_profile.json",
+  "status": "completed_on_declared_samples",
+  "comparisons": [
+    {
+      "topic": "leading index",
+      "upstream": "Not documented",
+      "observed": "OSS Node/MSResource/MSRTQps have an unnamed leading column; CASPER has 8 named columns without it",
+      "policy": "Validate header, then drop only an actual unnamed source index"
+    },
+    {
+      "topic": "Node field names",
+      "upstream": "cpu_utilization, memory_utilization",
+      "observed": "node_cpu_usage, node_memory_usage",
+      "policy": "Preserve observed raw column names; retain utilization units without conversion to CPU cores"
+    },
+    {
+      "topic": "Resource layout",
+      "upstream": "timestamp shown first; utilization fields unprefixed",
+      "observed": "timestamp last; instance_cpu_usage, instance_memory_usage",
+      "policy": "Resolve timestamp by header, not a shared ordinal"
+    },
+    {
+      "topic": "Resource cadence",
+      "upstream": "60 seconds",
+      "observed": "All 2023518 sample timestamps on 30-second grid, with both 0 and 30000 ms minute residues",
+      "policy": "Use 30-second native table and separate flagged 60-second projection"
+    },
+    {
+      "topic": "MSRTQps metric field",
+      "upstream": "metrics",
+      "observed": "metric",
+      "policy": "Use singular field and validate the 10 source metric names"
+    },
+    {
+      "topic": "MSCallGraph order",
+      "upstream": "timestamp before traceid; interface before dm",
+      "observed": "CASPER traceid,timestamp,rpcid,um,rpctype,dm,interface,rt",
+      "policy": "CASPER timestamp index 1; OSS index 2 when index column exists"
+    },
+    {
+      "topic": "communication types",
+      "upstream": "DB and MC upper case in prose",
+      "observed": "db,http,mc,mq,rpc,userDefined",
+      "policy": "Preserve six observed categories; do not apply undocumented global case/type replacement"
+    },
+    {
+      "topic": "RPC/HTTP RT",
+      "upstream": "signed caller and callee observations; sub-ms durations can be 0",
+      "observed": "Signed and zero RT values exist",
+      "policy": "Keep sign and observation side; do not deduplicate by traceid/rpcid alone"
+    },
+    {
+      "topic": "HTTP metrics",
+      "upstream": "Separate MCR calls/s and RT ms",
+      "observed": "246620 paired sample keys have exactly equal HTTP_MCR and HTTP_RT values",
+      "policy": "Flag HTTP metrics as suspect; maintainer confirmation in issue 120"
+    },
+    {
+      "topic": "MQ RT",
+      "upstream": "Processing interval description",
+      "observed": "37288 negative, 31719 zero out of 81659 CASPER MQ rows",
+      "policy": "Retain topology observations; negative MQ is not a valid duration. Negative values are not a majority in this sample"
+    },
+    {
+      "topic": "time and scope",
+      "upstream": "Milliseconds relative to a 12-hour observation window",
+      "observed": "OSS dev samples are inclusive 0..600000 ms; five CASPER partitions span 419..43199066 ms",
+      "policy": "Do not call development samples full 12-hour coverage or infer absolute UTC from timestamps"
+    }
+  ],
+  "additional_oss_callgraph_header_check": {
+    "url": "http://aliopentrace.oss-cn-beijing.aliyuncs.com/v2021MicroservicesTraces/MSCallGraph/MSCallGraph_0.tar.gz",
+    "checked_at_utc": "2026-11-25T18:58:00.487730+00:00",
+    "http_status": 206,
+    "compressed_prefix_bytes_read": 131072,
+    "header": [
+      "",
+      "traceid",
+      "timestamp",
+      "rpcid",
+      "um",
+      "rpctype",
+      "dm",
+      "interface",
+      "rt"
+    ],
+    "scope": "Header only from a bounded archive prefix; no full-file statistics inferred"
+  }
+}

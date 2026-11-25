@@ -32,7 +32,6 @@ CONFIGS_DIR = REPO_ROOT / "configs"
 NONEXISTENT_DOTENV = REPO_ROOT / ".env.nonexistent"
 
 STUB_CLIS: list[tuple[str, str, str]] = [
-    ("run_silver.py", "silver", "configs/lakehouse.yaml"),
     ("run_gold.py", "gold", "configs/lakehouse.yaml"),
     ("run_graphs.py", "graphs", "configs/features.yaml"),
     ("run_features.py", "features", "configs/features.yaml"),

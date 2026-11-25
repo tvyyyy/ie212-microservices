@@ -2,7 +2,7 @@
 
 Step-by-step verification guide for **Vy's Linux Docker host** covering MinIO (`pgsty/silo`), Iceberg REST Catalog (`apache/iceberg-rest-fixture`), PySpark `4.1.4` + Iceberg `1.11.0`, DuckDB `2.0.1` (`ATTACH ... TYPE iceberg` + S3 secret), and the Parquet export fallback.
 
-The primary host is Windows 11 with Docker Desktop's Linux/WSL2 backend; commands below run against Linux containers. See `resources.md` for measured host and WSL limits. `scripts/run_silver.py` currently only validates configuration and returns `status: planned_stub`; it does not implement Silver transformations. Those remain Vy's T10/T13/T14 work.
+The primary host is Windows 11 with Docker Desktop's Linux/WSL2 backend; commands below run against Linux containers. See `resources.md` for measured host and WSL limits. `scripts/run_silver.py` now implements T10 Node/Resource/RTQps normalization; see [Silver metrics runbook](silver_metrics_runbook.md). Calls/trace T13/T14 remain separate work.
 
 > **Synthetic Data Notice:** `scripts/run_smoke_test.py` writes a 4-row **synthetic** test table (`ie212.silver.smoke_test_calls`) aligned with the 8 `MSCallGraph` columns (`traceid` values `smoke_t08_trace_001` / `smoke_t08_trace_002`). It is strictly isolated from Alibaba production/sample results.
 

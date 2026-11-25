@@ -1,0 +1,586 @@
+{
+  "version": "t06_raw_v1",
+  "status": "passed",
+  "generated_at_utc": "2026-11-25T18:51:10.124546+00:00",
+  "run_id": "t06_20261125T185110Z",
+  "scope": "All rows of explicitly listed local development samples; not full dataset statistics",
+  "resources": {
+    "duckdb_memory_limit": "1GB",
+    "threads": 2
+  },
+  "missing_tokens": [
+    "",
+    "NAN",
+    "(?)",
+    "NULL",
+    "null"
+  ],
+  "datasets": {
+    "oss_node": {
+      "files": [
+        {
+          "path": "data/sample/node/Node_sample_0_10m.csv.gz",
+          "bytes": 16723446,
+          "sha256": "aa9932abdc7ca793bc77d1f021195a1bf5d0bedaf6d9c38bd65c271d99448922",
+          "header": [
+            "",
+            "timestamp",
+            "nodeid",
+            "node_cpu_usage",
+            "node_memory_usage"
+          ]
+        }
+      ],
+      "rows": 275356,
+      "columns": {
+        "timestamp": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 0
+        },
+        "nodeid": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 0
+        },
+        "node_cpu_usage": {
+          "sql_null": 0,
+          "blank": 42,
+          "missing": 42,
+          "sentinel_counts": [
+            {
+              "token": "",
+              "rows": 42
+            }
+          ]
+        },
+        "node_memory_usage": {
+          "sql_null": 0,
+          "blank": 21,
+          "missing": 21,
+          "sentinel_counts": [
+            {
+              "token": "",
+              "rows": 21
+            }
+          ]
+        }
+      },
+      "time": {
+        "min_ms": 0.0,
+        "max_ms": 600000.0,
+        "invalid_rows": 0,
+        "off_cadence_rows": 0,
+        "cadence_ms": 30000,
+        "observed_residues_ms": [
+          {
+            "residue": 0.0,
+            "rows": 144234
+          },
+          {
+            "residue": 30000.0,
+            "rows": 131122
+          }
+        ]
+      },
+      "exact_duplicates": {
+        "distinct_domain_rows": 275356,
+        "excess_rows": 0
+      },
+      "candidate_key": {
+        "columns": [
+          "nodeid",
+          "timestamp"
+        ],
+        "groups": 275356,
+        "duplicate_groups": 0,
+        "excess_rows": 0,
+        "conflicting_groups": 0,
+        "maximum_multiplicity": 1
+      },
+      "numeric": {
+        "node_cpu_usage": {
+          "invalid_nonmissing_rows": 0,
+          "negative_rows": 0,
+          "above_one_rows": 0,
+          "min_value": 0.001343952992899859,
+          "max_value": 0.9469727549949905
+        },
+        "node_memory_usage": {
+          "invalid_nonmissing_rows": 0,
+          "negative_rows": 0,
+          "above_one_rows": 0,
+          "min_value": 0.0060222779405543925,
+          "max_value": 0.9010930285840637
+        }
+      }
+    },
+    "oss_msresource": {
+      "files": [
+        {
+          "path": "data/sample/msresource/MSResource_sample_0_10m.csv.gz",
+          "bytes": 249372308,
+          "sha256": "2166cc5c0aa694eb4e60172287e6f399d88773d67c69bb59c851502743e51164",
+          "header": [
+            "",
+            "msname",
+            "msinstanceid",
+            "nodeid",
+            "instance_cpu_usage",
+            "instance_memory_usage",
+            "timestamp"
+          ]
+        }
+      ],
+      "rows": 2023518,
+      "columns": {
+        "msname": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 0
+        },
+        "msinstanceid": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 0
+        },
+        "nodeid": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 0
+        },
+        "instance_cpu_usage": {
+          "sql_null": 0,
+          "blank": 189,
+          "missing": 189,
+          "sentinel_counts": [
+            {
+              "token": "",
+              "rows": 189
+            }
+          ]
+        },
+        "instance_memory_usage": {
+          "sql_null": 0,
+          "blank": 189,
+          "missing": 189,
+          "sentinel_counts": [
+            {
+              "token": "",
+              "rows": 189
+            }
+          ]
+        },
+        "timestamp": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 0
+        }
+      },
+      "time": {
+        "min_ms": 0.0,
+        "max_ms": 600000.0,
+        "invalid_rows": 0,
+        "off_cadence_rows": 0,
+        "cadence_ms": 30000,
+        "observed_residues_ms": [
+          {
+            "residue": 0.0,
+            "rows": 1059938
+          },
+          {
+            "residue": 30000.0,
+            "rows": 963580
+          }
+        ]
+      },
+      "exact_duplicates": {
+        "distinct_domain_rows": 2023518,
+        "excess_rows": 0
+      },
+      "candidate_key": {
+        "columns": [
+          "msname",
+          "msinstanceid",
+          "timestamp"
+        ],
+        "groups": 2023518,
+        "duplicate_groups": 0,
+        "excess_rows": 0,
+        "conflicting_groups": 0,
+        "maximum_multiplicity": 1
+      },
+      "numeric": {
+        "instance_cpu_usage": {
+          "invalid_nonmissing_rows": 0,
+          "negative_rows": 0,
+          "above_one_rows": 24,
+          "min_value": 0.0,
+          "max_value": 1.1082083333361272
+        },
+        "instance_memory_usage": {
+          "invalid_nonmissing_rows": 0,
+          "negative_rows": 0,
+          "above_one_rows": 0,
+          "min_value": 0.0,
+          "max_value": 0.9802942276000977
+        }
+      }
+    },
+    "oss_msrtqps": {
+      "files": [
+        {
+          "path": "data/sample/msrtqps/MSRTQps_sample_0_10m.csv.gz",
+          "bytes": 331540452,
+          "sha256": "f45719156c076eab285a97a90f424b025e996b73a60cb9236f66bb2f25befbe8",
+          "header": [
+            "",
+            "timestamp",
+            "msname",
+            "msinstanceid",
+            "metric",
+            "value"
+          ]
+        }
+      ],
+      "rows": 5790196,
+      "columns": {
+        "timestamp": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 0
+        },
+        "msname": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 0
+        },
+        "msinstanceid": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 0
+        },
+        "metric": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 0
+        },
+        "value": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 0
+        }
+      },
+      "time": {
+        "min_ms": 0.0,
+        "max_ms": 600000.0,
+        "invalid_rows": 0,
+        "off_cadence_rows": 0,
+        "cadence_ms": 60000,
+        "observed_residues_ms": [
+          {
+            "residue": 0.0,
+            "rows": 5790196
+          }
+        ]
+      },
+      "exact_duplicates": {
+        "distinct_domain_rows": 5790196,
+        "excess_rows": 0
+      },
+      "candidate_key": {
+        "columns": [
+          "msname",
+          "msinstanceid",
+          "timestamp",
+          "metric"
+        ],
+        "groups": 5790196,
+        "duplicate_groups": 0,
+        "excess_rows": 0,
+        "conflicting_groups": 0,
+        "maximum_multiplicity": 1
+      },
+      "metric_counts": [
+        {
+          "metric": "HTTP_MCR",
+          "rows": 246620
+        },
+        {
+          "metric": "HTTP_RT",
+          "rows": 246620
+        },
+        {
+          "metric": "consumerMQ_MCR",
+          "rows": 632326
+        },
+        {
+          "metric": "consumerMQ_RT",
+          "rows": 632326
+        },
+        {
+          "metric": "consumerRPC_MCR",
+          "rows": 1031350
+        },
+        {
+          "metric": "consumerRPC_RT",
+          "rows": 1031350
+        },
+        {
+          "metric": "providerRPC_MCR",
+          "rows": 984802
+        },
+        {
+          "metric": "providerRPC_RT",
+          "rows": 984802
+        }
+      ],
+      "unknown_metric_rows": 0,
+      "http_equality": {
+        "matched_keys": 246620,
+        "equal_values": 246620
+      },
+      "numeric": {
+        "value": {
+          "invalid_nonmissing_rows": 0,
+          "negative_rows": 0,
+          "above_one_rows": 5104221,
+          "min_value": 0.0,
+          "max_value": 62518.301341589264
+        }
+      }
+    },
+    "casper_mscallgraph": {
+      "files": [
+        {
+          "path": "data/sample/mscallgraph/partition_id=-10.csv.gz",
+          "bytes": 11075625,
+          "sha256": "99e37af49cd19d7a87196fa0918b431fa71a74893987d799180ead590101525e",
+          "header": [
+            "traceid",
+            "timestamp",
+            "rpcid",
+            "um",
+            "rpctype",
+            "dm",
+            "interface",
+            "rt"
+          ]
+        },
+        {
+          "path": "data/sample/mscallgraph/partition_id=-106.csv.gz",
+          "bytes": 10884781,
+          "sha256": "c64b57b616d2e567c6a6df6c604ff2bd0af4b4976a4e54716cc7b013f1d545f0",
+          "header": [
+            "traceid",
+            "timestamp",
+            "rpcid",
+            "um",
+            "rpctype",
+            "dm",
+            "interface",
+            "rt"
+          ]
+        },
+        {
+          "path": "data/sample/mscallgraph/partition_id=-131.csv.gz",
+          "bytes": 11449499,
+          "sha256": "4cd4582254406f85cb4fe3f71c5cc333311807883f75c53d93b16b2cd7531b41",
+          "header": [
+            "traceid",
+            "timestamp",
+            "rpcid",
+            "um",
+            "rpctype",
+            "dm",
+            "interface",
+            "rt"
+          ]
+        },
+        {
+          "path": "data/sample/mscallgraph/partition_id=-133.csv.gz",
+          "bytes": 11275433,
+          "sha256": "bc8f8cd65ba871c9769133d6b45ab337cff615a4151b66b8bed8cfd09b032463",
+          "header": [
+            "traceid",
+            "timestamp",
+            "rpcid",
+            "um",
+            "rpctype",
+            "dm",
+            "interface",
+            "rt"
+          ]
+        },
+        {
+          "path": "data/sample/mscallgraph/partition_id=-138.csv.gz",
+          "bytes": 11330581,
+          "sha256": "0176bf4eb505d30fb84c259d16834e39ca62e72ed2fe14113f8d119380e57536",
+          "header": [
+            "traceid",
+            "timestamp",
+            "rpcid",
+            "um",
+            "rpctype",
+            "dm",
+            "interface",
+            "rt"
+          ]
+        }
+      ],
+      "rows": 2443480,
+      "columns": {
+        "traceid": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 0
+        },
+        "timestamp": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 0
+        },
+        "rpcid": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 0
+        },
+        "um": {
+          "sql_null": 0,
+          "blank": 21880,
+          "missing": 216431,
+          "sentinel_counts": [
+            {
+              "token": "",
+              "rows": 21880
+            },
+            {
+              "token": "(?)",
+              "rows": 194551
+            }
+          ]
+        },
+        "rpctype": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 0
+        },
+        "dm": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 188873,
+          "sentinel_counts": [
+            {
+              "token": "(?)",
+              "rows": 188873
+            }
+          ]
+        },
+        "interface": {
+          "sql_null": 0,
+          "blank": 1339578,
+          "missing": 1339578,
+          "sentinel_counts": [
+            {
+              "token": "",
+              "rows": 1339578
+            }
+          ]
+        },
+        "rt": {
+          "sql_null": 0,
+          "blank": 0,
+          "missing": 0
+        }
+      },
+      "time": {
+        "min_ms": 419.0,
+        "max_ms": 43199066.0,
+        "invalid_rows": 0
+      },
+      "exact_duplicates": {
+        "distinct_domain_rows": 2238402,
+        "excess_rows": 205078
+      },
+      "candidate_key": {
+        "columns": [
+          "traceid",
+          "rpcid"
+        ],
+        "groups": 1877846,
+        "duplicate_groups": 378793,
+        "excess_rows": 565634,
+        "maximum_multiplicity": 758,
+        "multiple_payload_groups": 276045,
+        "warning": "Occurrence grouping only; both observation sides and distinct occurrences may share traceid/rpcid. This is not a deduplication key."
+      },
+      "rpc_types": [
+        {
+          "rpctype": "db",
+          "rows": 101580,
+          "negative_rt_rows": 0,
+          "zero_rt_rows": 35750
+        },
+        {
+          "rpctype": "http",
+          "rows": 109468,
+          "negative_rt_rows": 69636,
+          "zero_rt_rows": 1136
+        },
+        {
+          "rpctype": "mc",
+          "rows": 1094901,
+          "negative_rt_rows": 0,
+          "zero_rt_rows": 553866
+        },
+        {
+          "rpctype": "mq",
+          "rows": 81659,
+          "negative_rt_rows": 37288,
+          "zero_rt_rows": 31719
+        },
+        {
+          "rpctype": "rpc",
+          "rows": 994434,
+          "negative_rt_rows": 359636,
+          "zero_rt_rows": 114262
+        },
+        {
+          "rpctype": "userDefined",
+          "rows": 61438,
+          "negative_rt_rows": 0,
+          "zero_rt_rows": 7597
+        }
+      ],
+      "topology": {
+        "traces": 51956,
+        "known_self_loop_rows": 224208,
+        "traces_across_sample_files": 0,
+        "unresolved_endpoint_rows": 370693
+      },
+      "numeric": {
+        "rt": {
+          "invalid_nonmissing_rows": 0,
+          "negative_rows": 466560,
+          "above_one_rows": 535704,
+          "min_value": -50297.0,
+          "max_value": 31870.0
+        }
+      }
+    }
+  },
+  "service_coverage": {
+    "resource_services": 1303,
+    "metric_services": 1301,
+    "matched_services": 1301
+  },
+  "container_minute_coverage": {
+    "metric_keys": 1058011,
+    "matched_keys": 1057824
+  },
+  "call_service_coverage": {
+    "call_services": 5889,
+    "metric_services": 1301,
+    "matched_services": 578
+  }
+}
