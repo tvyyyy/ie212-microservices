@@ -1,8 +1,23 @@
-# P1 scaffold: exact dependency versions will be pinned after P1 Docker/Iceberg smoke tests (T08).
-# Compatibility constraints verified on 25 Nov 2026:
-# - Python: 3.11 or 3.12 (networkit 11.3 currently lacks wheels for Python 3.14).
-# - PySpark + Apache Iceberg: pin pyspark==4.1.* (matching iceberg-spark-runtime-4.1_2.13)
-#   or pyspark==3.5.* (matching iceberg-spark-runtime-3.5_2.12). Do NOT install unpinned pyspark 4.3.x.
-# - Core libraries to validate & pin:
-#   pyspark, duckdb, pandas, pyarrow, lightgbm, scikit-learn,
-#   networkit, scipy, pyyaml, matplotlib, seaborn, boto3, streamlit, pytest.
+# IE212 Week 1 core runtime & test dependencies (Python 3.11 / 3.12 recommended).
+# Compatibility notes:
+# - Python 3.12 via uv (`uv venv --python 3.12`); networkit 11.3 lacks Python 3.14 wheels.
+# - PySpark 4.1.4 matches org.apache.iceberg:iceberg-spark-runtime-4.1_2.13:1.11.0.
+# Install Week 1 environment:
+#   uv pip install -e . -r requirements.txt
+
+pandas>=2.2,<3.0
+pyarrow>=18.0,<27,!=25.0.0
+duckdb==2.0.1
+pyspark==4.1.4
+pyyaml==6.0.4
+boto3==1.44.11
+pytest==9.2.0
+
+# Week 2+ optional dependencies (install via `uv pip install -e ".[ml,viz]"` or `".[all]"`):
+# lightgbm
+# scikit-learn
+# networkit
+# scipy
+# matplotlib
+# seaborn
+# streamlit

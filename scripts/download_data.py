@@ -42,13 +42,14 @@ def parse_args() -> argparse.Namespace:
         "--casper-fraction",
         type=float,
         default=None,
-        help="Override sampling.casper_raw_fraction (default from configs/data.yaml)",
+        help="Override datasets.casper_mscallgraph.sampling.ratio (default from configs/data.yaml)",
     )
     parser.add_argument(
         "--max-workers",
         type=int,
-        default=4,
-        help="Concurrent workers for CASPER partition downloads",
+        default=None,
+        choices=(1, 2),
+        help="CASPER workers (default: download.max_concurrency; at most 2)",
     )
     parser.add_argument(
         "--sample-window-ms",
@@ -71,29 +72,31 @@ def main() -> None:
     cfg = load_data_config(args.config)
     dirs = ensure_data_directories(repo_root, cfg)
 
-    seed = int(cfg["dataset"]["seed"])
-    base_url = str(cfg["sources"]["alibaba_oss_base_url"]).rstrip("/")
+    seed = int(cfg["seed"])
+    base_url = str(cfg["sources"]["alibaba_oss"]["base_url"]).rstrip("/")
     casper_cfg = cfg["sources"]["casper_dataverse"]
-    sampling_cfg = cfg["sampling"]
+    sampling_cfg = cfg["datasets"]["casper_mscallgraph"]["sampling"]
+    api_base = casper_cfg["api_base_url"].rstrip("/")
 
     fraction = (
         args.casper_fraction
         if args.casper_fraction is not None
-        else float(sampling_cfg["casper_raw_fraction"])
+        else float(sampling_cfg["ratio"])
     )
-    dev_casper_n = int(sampling_cfg.get("casper_dev_sample_count", 5))
+    dev_casper_n = int(sampling_cfg.get("dev_sample_count", 5))
 
     manifest_files: list[dict[str, Any]] = []
 
     # 1. Alibaba OSS: Node, MSResource, MSRTQps
     if args.mode == "dev":
         node_files = ["node/Node_0.tar.gz"]
-        res_indices = list(sampling_cfg["oss_dev_slice_indices"]["msresource"])
-        rtqps_indices = list(sampling_cfg["oss_dev_slice_indices"]["msrtqps"])
+        res_indices = [0]
+        rtqps_indices = [0]
     else:
-        node_files = list(cfg["sources"]["oss_files"]["node"])
-        res_indices = list(cfg["sources"]["oss_files"]["msresource_indices"])
-        rtqps_indices = list(cfg["sources"]["oss_files"]["msrtqps_indices"])
+        node_cfg = cfg["datasets"]["oss_node"]
+        node_files = [node_cfg["archive_pattern"].format(index=i) for i in node_cfg["indices"]]
+        res_indices = list(cfg["datasets"]["oss_msresource"]["indices"])
+        rtqps_indices = list(cfg["datasets"]["oss_msrtqps"]["indices"])
 
     oss_targets: list[tuple[str, str, Path, int]] = []
     for rel in node_files:
@@ -161,7 +164,7 @@ def main() -> None:
 
     # 2. Harvard Dataverse CASPER Shuffled v2021 MSCallGraph
     casper_all = load_or_fetch_casper_metadata(
-        api_url=casper_cfg["api_dataset_url"],
+        api_url=f"{api_base}/datasets/:persistentId/?persistentId=doi:{casper_cfg['doi']}",
         cache_path=args.casper_metadata_cache,
     )
     selected = select_deterministic_casper_partitions(casper_all, fraction=fraction, seed=seed)
@@ -171,11 +174,11 @@ def main() -> None:
     )
     casper_records = download_casper_partitions(
         selected_files=selected,
-        url_template=casper_cfg["datafile_url_template"],
+        url_template=f"{api_base}/access/datafile/{{file_id}}",
         dest_dir=dirs["raw/mscallgraph"],
         repo_root=repo_root,
         doi=casper_cfg["doi"],
-        max_workers=args.max_workers,
+        max_workers=args.max_workers or int(cfg["download"]["max_concurrency"]),
     )
     manifest_files.extend(casper_records)
 
@@ -185,8 +188,8 @@ def main() -> None:
         dst_p = dirs["sample/mscallgraph"] / rec["filename"]
         shutil.copy2(src_p, dst_p)
         sha256, md5, size = compute_file_hashes(dst_p)
-        # Verified live schema: traceid=1, timestamp=2 (0 is unnamed index)
-        g_stats = inspect_gzip_csv_stats(dst_p, timestamp_col_index=2)
+        # CASPER has 8 columns and no index; resolve timestamp from its header.
+        g_stats = inspect_gzip_csv_stats(dst_p)
         manifest_files.append(
             {
                 "table": "MSCallGraph",
@@ -205,7 +208,7 @@ def main() -> None:
 
     manifest = {
         "manifest_version": "1.0",
-        "dataset": cfg["dataset"]["name"],
+        "dataset": "alibaba-cluster-trace-microservices-v2021",
         "seed": seed,
         "mode": args.mode,
         "scope_note": (

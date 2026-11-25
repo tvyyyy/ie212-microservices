@@ -1,3 +1,61 @@
-# Three engines, three workloads, 10/25/50/100% input scales, at least three repetitions, and memory/cache/core settings
-# Configuration scaffold: not yet implemented; define the schema with the corresponding stage.
-{}
+# RQ3 comparative processing benchmark across Spark, DuckDB, and Pandas.
+seed: 1217
+output_dir: "artifacts/benchmarks"
+
+engines:
+  spark:
+    enabled: true
+    parallel_core_scaling: true
+  duckdb:
+    enabled: true
+    parallel_core_scaling: true
+    primary_mode: "attach_iceberg_rest_catalog"
+    fallback_mode: "parquet_export"
+    record_export_cost_separately: true
+  pandas:
+    enabled: true
+    parallel_core_scaling: false
+    notes: "Single-threaded execution; excluded from multi-core speedup claims."
+
+workloads:
+  aggregate_metrics:
+    description: "Filter and aggregate MSRTQps container metrics to service-minute grain."
+    inputs: ["bronze.ms_rt_qps"]
+    core_scaling_candidate: false
+  join_metrics_resources_host:
+    description: "Align 30s Node/MSResource to 60s and join with 60s MSRTQps."
+    inputs: ["silver.ms_rt_qps", "silver.ms_resource", "silver.node"]
+    core_scaling_candidate: true
+  aggregate_edges:
+    description: "Aggregate MSCallGraph calls into directed service dependency edges."
+    inputs: ["silver.ms_call_graph"]
+    core_scaling_candidate: true
+
+scales: [0.10, 0.25, 0.50, 1.00]
+nested_sampling: true
+repetitions: 3
+
+core_scaling:
+  cores: [1, 2, 4, 8]
+  engines: ["spark", "duckdb"]
+  workloads: ["join_metrics_resources_host", "aggregate_edges"]
+  respect_physical_host_core_limit: true
+
+execution_policy:
+  fixed_cpu_limit: 4
+  fixed_memory_limit_gb: 8
+  timeout_seconds: 1800
+  cache_policy: "document_cold_and_warm_cache_order"
+  warmup_runs: 1
+  measure_peak_ram: true
+  include_jvm_memory: true
+  measure_spill: true
+  force_materialization: true
+  record_failures: ["OOM", "timeout", "unsupported"]
+  spill_unavailable_marker: "NA"
+
+equivalence:
+  verify_before_timing: true
+  checks: ["row_count", "key_set", "aggregate_checksum"]
+  numeric_rtol: 1.0e-6
+  numeric_atol: 1.0e-6

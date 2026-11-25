@@ -4,20 +4,23 @@ Initial live header and cadence verification was performed via HTTP Range sampli
 
 ## Live-Verified Raw Schemas (Alibaba `cluster-trace-microservices-v2021`)
 
-All four raw CSV tables contain a leading unnamed index column (`,...`) that must be dropped or normalized during Bronze ingestion.
+The four Alibaba OSS raw CSV tables (`Node`, `MSResource`, `MSRTQps`, and OSS `MSCallGraph`) contain a leading unnamed index column (`,...`) that must be dropped or normalized during Bronze ingestion. CASPER Shuffled v2021 has exactly **8 columns**, beginning directly with `traceid`, and **no leading unnamed index column**.
 
 | Table | Verified CSV Header | Verified Cadence & Sharding | Key Anomalies to Handle in Silver |
 | --- | --- | --- | --- |
 | `Node` (`Node_0.tar.gz`) | `,timestamp,nodeid,node_cpu_usage,node_memory_usage` | **30s** (`ts % 30000 == 0`), unsorted | Bare-metal capacity undisclosed (Issue #119); aggregate 30s→60s. |
 | `MSResource` (`MSResource_{0..11}.tar.gz`) | `,msname,msinstanceid,nodeid,instance_cpu_usage,instance_memory_usage,timestamp` | **30s** (`ts % 30000 == 0`, differs from README), time-sharded | `timestamp` is the **last column**; container quota denominator incompatible with `Node` (do not subtract); aggregate 30s→60s before joining `MSRTQps`. |
 | `MSRTQps` (`MSRTQps_{0..24}.tar.gz`) | `,timestamp,msname,msinstanceid,metric,value` | **60s** (`ts % 60000 == 0`), 30-min time slices | Singular `metric`; rows grouped in metric blocks (no `head(N)` sampling); `HTTP_MCR == HTTP_RT` bug (Issue #120); units: `*_MCR` = calls/s, `*_RT` = ms. |
-| `MSCallGraph` (OSS `_0..144` or CASPER Shuffled `doi:10.7910/DVN/RXIC9Z`) | `,traceid,timestamp,rpcid,um,rpctype,dm,interface,rt` | Millisecond event timestamps; 5-min slices (OSS) or trace-hashed partitions (CASPER) | 6 `rpctype` (`rpc`, `mc`, `http`, `userDefined`, `db`, `mq`); `mq` has majority negative RT; ~12% self-loops; ~17% sentinels (`(?)`, `''`); `(traceid, rpcid)` multiplicity >2; ~3% MS overlap with `MSResource`/`MSRTQps`. |
+| `MSCallGraph` (Alibaba OSS `_0..144`) | `,traceid,timestamp,rpcid,um,rpctype,dm,interface,rt` | Millisecond event timestamps; 5-min slices | 6 `rpctype` (`rpc`, `mc`, `http`, `userDefined`, `db`, `mq`); `mq` has majority negative RT; ~12% self-loops; ~17% sentinels (`(?)`, `''`); `(traceid, rpcid)` multiplicity >2; ~3% MS overlap with `MSResource`/`MSRTQps`. |
+| `MSCallGraph` (CASPER Shuffled v2021 `doi:10.7910/DVN/RXIC9Z`) | `traceid,timestamp,rpcid,um,rpctype,dm,interface,rt` | Millisecond event timestamps; trace-hashed partitions | 8 columns; no unnamed index. Validate call anomalies and coverage on the selected partitions; OSS percentages above are not measurements of the CASPER sample. |
+
+For raw `MSCallGraph`, the zero-based `timestamp` column index is **2 for Alibaba OSS** and **1 for CASPER**. Select it by header name where possible; never drop CASPER's first column as an index. The CASPER header was checked in sample `partition_id=-10.csv.gz`, as recorded in the PR #2 review follow-up.
 
 Sources: External workspace context documents (`metadata.txt` and `agents_ie212.md`, maintained outside the repository).
 
 ## Column Contract — Proposed Until Full-File Validation
 
-Headers above were inspected in limited OSS samples. Types and candidate keys below are ingestion contracts, not evidence of full-file uniqueness. Raw source file and row offsets must be retained; the unnamed index is not a global key. Nullability, ranges, conflicts, and coverage remain P0 checks.
+Headers above were inspected in limited OSS samples and the CASPER sample identified above. Types and candidate keys below are ingestion contracts, not evidence of full-file uniqueness. Raw source file and row offsets must be retained; the unnamed index is not a global key. Nullability, ranges, conflicts, and coverage remain P0 checks.
 
 | Table | Row grain | Candidate key to validate |
 | --- | --- | --- |
@@ -28,7 +31,7 @@ Headers above were inspected in limited OSS samples. Types and candidate keys be
 
 | Table | Column(s) | Proposed type | Unit / meaning |
 | --- | --- | --- | --- |
-| All | unnamed leading index | string in raw staging | Source-local row index; retain as lineage or drop after recording source row offset |
+| Alibaba OSS tables only (not CASPER) | unnamed leading index | string in raw staging | Source-local row index; retain as lineage or drop after recording source row offset |
 | All | timestamp | int64 | Milliseconds relative to the observation window, not a Unix timestamp; window start/end semantics require validation |
 | Node, MSResource | nodeid | string | Opaque host identifier; join only after key/time alignment |
 | Node | node_cpu_usage, node_memory_usage | float64 | Reported host utilization ratios; bare-metal capacity/normalization is not established |
@@ -63,4 +66,4 @@ This vocabulary follows the upstream Alibaba documentation; complete-file presen
 
 Node and MSResource must first be aggregated from 30s to 60s at their own entity grain before joining MSRTQps. Record window boundaries, aggregation functions, missing half-windows, and join multiplicity during implementation. Never subtract summed container CPU from host CPU.
 
-Upstream vocabulary and units: [Alibaba v2021 README](https://github.com/alibaba/clusterdata/blob/master/cluster-trace-microservices-v2021/README.md). Raw header corrections above come from limited OSS inspection, rather than assuming the upstream README exactly matches raw files.
+Upstream vocabulary and units: [Alibaba v2021 README](https://github.com/alibaba/clusterdata/blob/master/cluster-trace-microservices-v2021/README.md). Raw header corrections above come from limited OSS inspection and the CASPER sample follow-up, rather than assuming the upstream README exactly matches raw files.

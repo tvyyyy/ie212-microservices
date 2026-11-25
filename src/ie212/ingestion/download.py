@@ -29,15 +29,16 @@ from typing import Any, Iterable, Mapping
 import urllib.error
 import urllib.request
 
-import yaml
+from ie212.config import load_config, validate_data_config
 
 SUBFOLDERS: tuple[str, ...] = ("node", "msresource", "msrtqps", "mscallgraph")
 
 
 def load_data_config(config_path: Path) -> dict[str, Any]:
     """Load `configs/data.yaml`."""
-    with config_path.open("r", encoding="utf-8") as fh:
-        return yaml.safe_load(fh)
+    cfg = load_config(config_path)
+    validate_data_config(cfg)
+    return cfg
 
 
 def ensure_data_directories(repo_root: Path, cfg: Mapping[str, Any]) -> dict[str, Path]:
@@ -46,8 +47,8 @@ def ensure_data_directories(repo_root: Path, cfg: Mapping[str, Any]) -> dict[str
     subfolders = tuple(paths_cfg.get("subfolders", SUBFOLDERS))
     created: dict[str, Path] = {}
 
-    raw_root = repo_root / paths_cfg["raw_root"]
-    sample_root = repo_root / paths_cfg["sample_root"]
+    raw_root = repo_root / paths_cfg["raw_dir"]
+    sample_root = repo_root / paths_cfg["sample_dir"]
     manifest_dir = repo_root / paths_cfg["manifest_dir"]
     manifest_dir.mkdir(parents=True, exist_ok=True)
     created["manifest"] = manifest_dir
@@ -195,7 +196,7 @@ def download_casper_partitions(
     dest_dir: Path,
     repo_root: Path,
     doi: str,
-    max_workers: int = 4,
+    max_workers: int = 2,
 ) -> list[dict[str, Any]]:
     """Download selected CASPER partitions concurrently and return manifest records."""
     records: list[dict[str, Any]] = []
@@ -298,14 +299,20 @@ def extract_time_window_sample_from_targz(
     }
 
 
-def inspect_gzip_csv_stats(csv_gz_path: Path, timestamp_col_index: int) -> dict[str, Any]:
+def inspect_gzip_csv_stats(csv_gz_path: Path, timestamp_col_index: int | None = None) -> dict[str, Any]:
     """Count rows and min/max timestamp in a `.csv.gz` file."""
     row_count = 0
     obs_min: int | None = None
     obs_max: int | None = None
     with gzip.open(csv_gz_path, mode="rt", encoding="utf-8", errors="replace", newline="") as fh:
         reader = csv.reader(fh)
-        next(reader, None)  # skip header
+        header = next(reader, [])
+        if "timestamp" not in header:
+            raise ValueError("CSV header must contain timestamp")
+        actual_index = header.index("timestamp")
+        if timestamp_col_index is not None and timestamp_col_index != actual_index:
+            raise ValueError("timestamp_col_index does not match CSV header")
+        timestamp_col_index = actual_index
         for row in reader:
             if not row:
                 continue

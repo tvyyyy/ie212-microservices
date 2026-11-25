@@ -21,6 +21,8 @@ data/sample/*
 artifacts/**/*
 !artifacts/**/
 !artifacts/**/.gitkeep
+!artifacts/manifest/
+!artifacts/manifest/*.json
 spark-warehouse/
 metastore_db/
 derby.log
@@ -42,6 +44,7 @@ docs/*.blg
 docs/*.fls
 docs/*.fdb_latexmk
 docs/*.synctex.gz
+docs/*.xdv
 docs/*.pdf
 
 # External workspace context files (managed outside the repository)
