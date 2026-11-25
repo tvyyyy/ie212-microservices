@@ -20,12 +20,13 @@
 - **Data Acquisition & Sampling Strategy:**
   - `MSCallGraph`: Acquire 10–25% of trace-complete hash partitions from **Harvard Dataverse CASPER Shuffled v2021** (`doi:10.7910/DVN/RXIC9Z`, Huye et al., ACM/SPEC ICPE 2024) to preserve intact traces without cross-file splitting.
   - `Node`, `MSResource`, `MSRTQps`: Stream-download the full 12-hour archives from Alibaba OSS, record original checksums/manifests, convert immediately to Bronze Parquet, and remove temporary `.tar.gz` archives.
-- **Live-Verified Schema Corrections (Alibaba OSS, 25 Nov 2026):**
-  - All four raw CSV tables begin with an unnamed index column (`,...`).
+- **Schema Corrections (Alibaba OSS inspection and CASPER sample follow-up, 25 Nov 2026):**
+  - The four Alibaba OSS raw CSV tables (`Node`, `MSResource`, `MSRTQps`, and OSS `MSCallGraph`) begin with an unnamed index column (`,...`). CASPER Shuffled v2021 has **8 columns starting directly with `traceid`**, with **no leading unnamed index column** (sample `partition_id=-10.csv.gz`, recorded in the PR #2 review follow-up).
   - Both `Node` and `MSResource` record at **30-second intervals** (`ts % 30000 == 0`), not 60s for `MSResource` as stated in the Alibaba README; `MSResource` places `timestamp` as the **last column** (`instance_cpu_usage`, `instance_memory_usage`). Both must be aligned 30s→60s before joining 60s `MSRTQps`.
   - `Node` vs. `MSResource` CPU/memory denominators are incompatible (Alibaba Issue #119); subtracting container CPU from node CPU is prohibited.
   - `MSRTQps` uses singular `metric`, is grouped in metric blocks (prohibiting `head(N)` sampling), and exhibits `HTTP_MCR == HTTP_RT` (Issue #120).
-  - `MSCallGraph` header is `,traceid,timestamp,rpcid,um,rpctype,dm,interface,rt` with six lowercase/camelCase `rpctype` values (`rpc`, `mc`, `http`, `userDefined`, `db`, `mq`), negative `mq` latencies, ~12% self-loops, ~17% sentinels, and `(traceid, rpcid)` multiplicities >2.
+  - Alibaba OSS `MSCallGraph` header is `,traceid,timestamp,rpcid,um,rpctype,dm,interface,rt` with six lowercase/camelCase `rpctype` values (`rpc`, `mc`, `http`, `userDefined`, `db`, `mq`), negative `mq` latencies, ~12% self-loops, ~17% sentinels, and `(traceid, rpcid)` multiplicities >2.
+  - CASPER Shuffled v2021 `MSCallGraph` header is `traceid,timestamp,rpcid,um,rpctype,dm,interface,rt`. Its zero-based `timestamp` column index is **1**, versus **2** for the raw OSS format; select by header name where possible and do not drop CASPER's `traceid` column. The ingestion follow-up must correct the CASPER timestamp selection and regenerate affected manifest timestamp ranges before accepting them.
 - **Locked Stack & Anti-Leakage Choices:**
   - Pin `pyspark==4.1.*` (matching Maven `iceberg-spark-runtime-4.1_2.13`) or `pyspark==3.5.*` (matching `3.5_2.12`) with Python 3.11/3.12 and OpenJDK 17+. Added `pyproject.toml` for `src/ie212/` editable installs.
   - Use **NetworKit** for RQ1 & Feature B centrality (`Degree`, `PageRank`, `EstimateBetweenness`, `CoreDecomposition`).
