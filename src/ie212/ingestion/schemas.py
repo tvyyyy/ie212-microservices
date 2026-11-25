@@ -20,11 +20,16 @@ class BronzeSchemaError(BronzeError, ValueError):
 
 PROVENANCE_COLUMNS: tuple[tuple[str, pa.DataType], ...] = (
     ("source_file", pa.string()),
+    ("source_row_offset", pa.int64()),
     ("source_uri", pa.string()),
     ("source_sha256", pa.string()),
     ("source_md5", pa.string()),
     ("ingested_at_utc", pa.string()),
 )
+
+DEFAULT_CASPER_PARTITION_MIN = -999
+DEFAULT_CASPER_PARTITION_MAX = 999
+DEFAULT_CASPER_TOTAL_PARTITIONS = 1999
 
 COLUMN_TYPE_MAP: dict[str, pa.DataType] = {
     "traceid": pa.string(),
@@ -68,7 +73,9 @@ DEFAULT_DATASETS_CONFIG: dict[str, dict[str, Any]] = {
     "casper_mscallgraph": {
         "source": "casper_dataverse",
         "file_pattern": "partition_id=*.csv.gz",
-        "total_partitions": 1999,
+        "total_partitions": DEFAULT_CASPER_TOTAL_PARTITIONS,
+        "partition_min": DEFAULT_CASPER_PARTITION_MIN,
+        "partition_max": DEFAULT_CASPER_PARTITION_MAX,
         "columns": [
             "traceid",
             "timestamp",
@@ -161,6 +168,8 @@ class DatasetSchema:
     s3_table_uri: str | None = None
     archive_pattern: str | None = None
     indices: tuple[int, ...] = ()
+    partition_min: int | None = None
+    partition_max: int | None = None
 
 
 @dataclass(frozen=True)
@@ -261,6 +270,23 @@ def build_dataset_schemas(
         source_name = str(raw_ds.get("source", "unknown"))
         doi_or_url = _resolve_source_uri(source_name, sources_cfg)
 
+        raw_pmin = raw_ds.get("partition_min")
+        raw_pmax = raw_ds.get("partition_max")
+        partition_min: int | None = None
+        partition_max: int | None = None
+        if raw_pmin is not None:
+            if isinstance(raw_pmin, bool) or not isinstance(raw_pmin, int):
+                raise BronzeSchemaError(
+                    f"Dataset '{name}' partition_min must be an integer, got {raw_pmin!r}."
+                )
+            partition_min = raw_pmin
+        if raw_pmax is not None:
+            if isinstance(raw_pmax, bool) or not isinstance(raw_pmax, int):
+                raise BronzeSchemaError(
+                    f"Dataset '{name}' partition_max must be an integer, got {raw_pmax!r}."
+                )
+            partition_max = raw_pmax
+
         schemas[name] = DatasetSchema(
             name=name,
             source=source_name,
@@ -276,6 +302,8 @@ def build_dataset_schemas(
                 str(raw_ds["archive_pattern"]) if raw_ds.get("archive_pattern") else None
             ),
             indices=_extract_indices(raw_ds),
+            partition_min=partition_min,
+            partition_max=partition_max,
         )
 
     return schemas
@@ -343,23 +371,83 @@ def normalize_csv_header(raw_header: Sequence[str], schema: DatasetSchema) -> He
 
 
 def select_casper_partitions(
-    partitions: int | Sequence[str] = 1999,
+    partitions: int | Sequence[str] | None = None,
     *,
+    partition_min: int | None = None,
+    partition_max: int | None = None,
     ratio: float = 0.10,
     seed: int = 42,
     min_ratio: float = 0.10,
     max_ratio: float = 0.25,
 ) -> list[str]:
-    """Deterministically select a seeded subset of CASPER Shuffled v2021 partitions."""
-    if not (min_ratio <= ratio <= max_ratio):
+    """Deterministically select a seeded subset of CASPER Shuffled v2021 partitions.
+
+    CASPER Shuffled v2021 partitions span signed IDs ``-999..999`` (1,999 partitions).
+    """
+    if (
+        isinstance(ratio, bool)
+        or isinstance(min_ratio, bool)
+        or isinstance(max_ratio, bool)
+        or not (0.0 < min_ratio <= max_ratio <= 1.0)
+        or not (min_ratio <= ratio <= max_ratio)
+    ):
         raise ValueError(
             f"CASPER sampling ratio {ratio} must be within [{min_ratio}, {max_ratio}]."
         )
 
-    if isinstance(partitions, int):
+    if isinstance(partitions, bool):
+        raise ValueError(f"partitions must be an integer or sequence of names, got {partitions!r}.")
+    if isinstance(partitions, (str, bytes)):
+        raise ValueError(
+            "partitions must be an integer or a sequence of partition filenames, not str/bytes."
+        )
+
+    if (partition_min is None) != (partition_max is None):
+        raise ValueError("partition_min and partition_max must both be provided together.")
+
+    if partition_min is not None and partition_max is not None:
+        if (
+            isinstance(partition_min, bool)
+            or not isinstance(partition_min, int)
+            or isinstance(partition_max, bool)
+            or not isinstance(partition_max, int)
+        ):
+            raise ValueError(
+                f"partition_min and partition_max must be integers, got ({partition_min!r}, {partition_max!r})."
+            )
+        if partition_min > partition_max:
+            raise ValueError(
+                f"partition_min ({partition_min}) must be <= partition_max ({partition_max})."
+            )
+        expected_count = partition_max - partition_min + 1
+        if partitions is not None:
+            if not isinstance(partitions, int):
+                raise ValueError(
+                    "Cannot specify both a partitions sequence and partition_min/partition_max."
+                )
+            if partitions != expected_count:
+                raise ValueError(
+                    f"partitions count {partitions} does not match bounds "
+                    f"[{partition_min}..{partition_max}] ({expected_count} partitions)."
+                )
+        candidates = [
+            f"partition_id={idx}.csv.gz" for idx in range(partition_min, partition_max + 1)
+        ]
+    elif partitions is None:
+        candidates = [
+            f"partition_id={idx}.csv.gz"
+            for idx in range(DEFAULT_CASPER_PARTITION_MIN, DEFAULT_CASPER_PARTITION_MAX + 1)
+        ]
+    elif isinstance(partitions, int):
         if partitions < 1:
             raise ValueError(f"partitions must be >= 1, got {partitions}.")
-        candidates = [f"partition_id={idx}.csv.gz" for idx in range(partitions)]
+        if partitions == DEFAULT_CASPER_TOTAL_PARTITIONS:
+            start = DEFAULT_CASPER_PARTITION_MIN
+            end = DEFAULT_CASPER_PARTITION_MAX
+        else:
+            start = -(partitions // 2)
+            end = start + partitions - 1
+        candidates = [f"partition_id={idx}.csv.gz" for idx in range(start, end + 1)]
     else:
         candidates = sorted(str(item) for item in partitions)
         if not candidates:
@@ -400,6 +488,9 @@ __all__ = [
     "BronzeSchemaError",
     "COLUMN_TYPE_MAP",
     "DATASET_TO_LAKEHOUSE_TABLE",
+    "DEFAULT_CASPER_PARTITION_MAX",
+    "DEFAULT_CASPER_PARTITION_MIN",
+    "DEFAULT_CASPER_TOTAL_PARTITIONS",
     "DEFAULT_DATASETS_CONFIG",
     "DEFAULT_SOURCES_CONFIG",
     "DatasetSchema",

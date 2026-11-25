@@ -65,11 +65,12 @@ feature_sets:
   C:
     extends: "B"
     description: "B + host load and co-located container activity excluding own container/service."
-    host_aggregation_key: ["nodeid", "minute"]
+    host_aggregation_key: ["nodeid", "minute_bucket"]
     exclude_self_container: true
     exclude_self_service: true
     host_to_service_weighting: "container_count_weighted"
     require_30s_to_60s_alignment: true
+    alignment_window_rule: "minute_t_00s_and_30s_only"
     forbidden_expressions:
       - "node_cpu_usage - sum(instance_cpu_usage)"
     forbidden_reason: "Alibaba Issue #119: Node bare-metal capacity denominator is incompatible with container quota denominator."

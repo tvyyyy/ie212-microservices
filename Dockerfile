@@ -52,6 +52,13 @@ RUN grep -vE '^(pyspark|#|[[:space:]]*$)' requirements.txt > /tmp/requirements-d
     && rm -f /tmp/requirements-docker.txt \
     && chmod -R a+rX /opt/venv /app
 
-ENV PYTHONPATH=/app/src:/opt/spark/python
+# Create writable HOME for UID 185 (base image defaults UID 185 to /nonexistent)
+RUN mkdir -p /home/spark && chown -R 185:185 /home/spark
+
+ENV PYTHONPATH=/app/src:/opt/spark/python \
+    HOME=/home/spark
 
 USER 185
+
+# Pre-install and verify DuckDB httpfs/iceberg extensions as UID 185 so /home/spark/.duckdb is owned by 185:185
+RUN /opt/venv/bin/python -c "import duckdb; conn = duckdb.connect(':memory:'); conn.execute('INSTALL httpfs; LOAD httpfs; INSTALL iceberg; LOAD iceberg;'); conn.close()"

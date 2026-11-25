@@ -19,6 +19,7 @@ from ie212.ingestion.downloader import (
     compute_file_checksums,
     download_batch,
     download_file_resumable,
+    parse_content_disposition_filename,
     validate_concurrency,
     verify_file_checksums,
 )
@@ -86,6 +87,7 @@ __all__ = [
     "load_manifest",
     "make_manifest_key",
     "normalize_csv_header",
+    "parse_content_disposition_filename",
     "resolve_bronze_s3_target",
     "resolve_compression",
     "resolve_oss_archive_urls",

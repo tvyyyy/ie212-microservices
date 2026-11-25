@@ -23,6 +23,8 @@ datasets:
     description: "Trace-complete hash-shuffled MSCallGraph v2021 partitions (8 columns, no leading unnamed index)."
     file_pattern: "partition_id=*.csv.gz"
     total_partitions: 1999
+    partition_min: -999
+    partition_max: 999
     sampling:
       strategy: "deterministic_partition_subset"
       ratio: 0.10

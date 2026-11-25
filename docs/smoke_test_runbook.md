@@ -82,11 +82,13 @@ Verify:
 docker compose exec spark id
 docker compose exec spark java -version
 docker compose exec spark python --version
+docker compose exec spark sh -c 'echo HOME=$HOME && ls -la /home/spark/.duckdb'
 docker compose exec spark ls -la /opt/spark/jars/iceberg-*.jar
 ```
 
 Verify:
 - `id` shows `uid=185(spark)` (`USER 185` from `Dockerfile`).
+- `HOME=/home/spark` (`185:185`) and `/home/spark/.duckdb` contains pre-installed `httpfs` and `iceberg` extensions (`docs/resources.md`).
 - `java -version` shows OpenJDK `17.x`.
 - `python --version` shows `3.12.x`.
 - `/opt/spark/jars/` contains `iceberg-spark-runtime-4.1_2.13-1.11.0.jar` and `iceberg-aws-bundle-1.11.0.jar`, and **no** `hadoop-aws` JAR.
@@ -146,7 +148,7 @@ Or run on Vy's Linux host (with `.venv` active, targeting `localhost:9000` and `
 python scripts/run_smoke_test.py --mode duckdb --target local
 ```
 
-> **Note:** DuckDB attempts `LOAD httpfs;` and `LOAD iceberg;` first, falling back to `INSTALL <ext>; LOAD <ext>;` only when an extension is not yet installed (requiring outbound HTTPS to DuckDB's extension repository on first install).
+> **Note:** `ie212-spark` pre-installs DuckDB `httpfs` and `iceberg` extensions during image build under `HOME=/home/spark` (`185:185`), so in-container runs succeed via `LOAD httpfs;` / `LOAD iceberg;` with no outbound HTTPS required. When running `--target local` from a host `.venv`, DuckDB attempts `LOAD <ext>;` first and falls back to `INSTALL <ext>; LOAD <ext>;` on first run (requiring outbound HTTPS to DuckDB's extension repository).
 
 ### 4.4 Combined End-to-End Run (`--mode all`)
 
@@ -184,7 +186,7 @@ python scripts/run_smoke_test.py --mode local --fallback-dir /tmp/ie212_smoke_lo
 Per project specifications (`configs/benchmarks.yaml` `record_export_cost_separately: true` and `docs/decisions.md` architecture rules):
 
 1. `--mode spark --export-fallback` writes a ZSTD/Snappy Parquet snapshot of `ie212.silver.smoke_test_calls` into `<fallback_dir>/smoke_test_calls/` and reports **`export_elapsed_seconds` separately** from Iceberg write/read `elapsed_seconds`.
-2. `--mode duckdb --fallback-on-error` attempts native `ATTACH '' AS ie212 (TYPE iceberg, ENDPOINT '...', AUTHORIZATION_TYPE none)` with `CREATE OR REPLACE SECRET minio_s3 (TYPE s3, ..., URL_STYLE 'path', USE_SSL false)` first.
+2. `--mode duckdb --fallback-on-error` attempts native `ATTACH '' AS ie212 (TYPE iceberg, ENDPOINT '...', AUTHORIZATION_TYPE none, ACCESS_DELEGATION_MODE 'none')` with `CREATE OR REPLACE SECRET minio_s3 (TYPE s3, ..., URL_STYLE 'path', USE_SSL false)` first.
 3. Only if Iceberg `ATTACH` or S3 table read fails **and** `--fallback-on-error` is explicitly passed does `smoke_test.py` run DuckDB `read_parquet(...)` on `<fallback_dir>/smoke_test_calls`, recording:
    - `"fallback_used": true`
    - `"primary_error": "<redacted root cause>"`
@@ -199,7 +201,7 @@ Per project specifications (`configs/benchmarks.yaml` `record_export_cost_separa
 | **Huy Windows Host (Java 8)** | Host has `Java 1.8.0_511` JRE only and no Docker Engine; PySpark `4.1.4` + Iceberg `1.11.0` requires Java `17+`. | `smoke_test.py` checks `java -version` before starting JVM. Run `--mode local` on Windows; run `--mode spark`/`all` inside `ie212-spark` (OpenJDK 17). |
 | **Spark `4.1.4` S3A vs `S3FileIO`** | Including `hadoop-aws` introduces unshaded `software.amazon.awssdk:bundle` conflicts against `iceberg-aws-bundle-1.11.0`. | `Dockerfile` omits `hadoop-aws`; `build_spark_iceberg_conf()` strictly forbids `hadoop-aws` / `software.amazon.awssdk:bundle` and configures `org.apache.iceberg.aws.s3.S3FileIO` with `s3.path-style-access=true`. |
 | **Spark Env Var Passthrough** | `docker-compose.yml` passes `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` (not `MINIO_ROOT_USER`) to `ie212-spark`. | `resolve_lakehouse_settings()` resolves `minio.access_key`/`secret_key` first and falls back to `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`. |
-| **DuckDB `2.0.1` Extensions** | `httpfs` and `iceberg` extensions are not pre-installed in the Docker image; first `LOAD` requires outbound HTTPS. | Ensure internet access on first run, or pre-warm extensions once inside `ie212-spark`. |
-| **DuckDB S3 + Iceberg REST** | MinIO requires `URL_STYLE 'path'`, `USE_SSL false`, and `host:port` `ENDPOINT`; REST `ATTACH` against `apache/iceberg-rest-fixture` (`JdbcCatalog`) may hit catalog-prefix or S3 credential-vending limits. | If `ATTACH` fails on live MinIO/Iceberg REST, pass `--export-fallback --fallback-on-error` (and `--attach-target s3://silver/warehouse` if needed), and log the exact `primary_error` in `docs/decisions.md`. |
+| **DuckDB `2.0.1` Extensions** | `httpfs` and `iceberg` are pre-installed in `ie212-spark` under `HOME=/home/spark` (`185:185`); host `.venv` runs install missing extensions on first `LOAD`. | No internet needed inside `ie212-spark`; for host `.venv` `--target local`, ensure outbound HTTPS on first `LOAD`. |
+| **DuckDB S3 + Iceberg REST** | MinIO requires `URL_STYLE 'path'`, `USE_SSL false`, and `host:port` `ENDPOINT`; REST `ATTACH` against `apache/iceberg-rest-fixture` (`JdbcCatalog`) uses `ACCESS_DELEGATION_MODE 'none'` (from `configs/lakehouse.yaml`) to rely on the local `minio_s3` secret instead of vended credentials, and may still hit catalog-prefix limits. | If `ATTACH` fails on live MinIO/Iceberg REST, pass `--export-fallback --fallback-on-error` (and `--attach-target s3://silver/warehouse` if needed), and log the exact `primary_error` in `docs/decisions.md`. |
 | **Iceberg REST SQLite `/data`** | `apache/iceberg-rest-fixture` runs as UID `1000:1000`; un-chowned Docker named volumes trigger `SQLITE_CANTOPEN`. | `iceberg-rest-init` runs `chown -R 1000:1000 /data` before `iceberg-rest` starts. |
 | **Spark Container UID `185`** | `ie212-spark` runs as `USER 185`; bind-mounted host folders owned by UID `1000` can reject Parquet fallback writes. | `chmod a+rwx artifacts/lakehouse_fallback` on host or pass `--fallback-dir /tmp/ie212_fallback`. |

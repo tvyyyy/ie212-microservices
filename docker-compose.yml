@@ -77,6 +77,7 @@ services:
       AWS_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY:-${MINIO_ROOT_USER:-}}
       AWS_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-}}
       AWS_REGION: ${AWS_REGION:-us-east-1}
+      CATALOG_CLIENT_REGION: ${AWS_REGION:-us-east-1}
       REST_PORT: "8181"
     volumes:
       - iceberg_rest_data:/data
@@ -93,6 +94,7 @@ services:
       dockerfile: Dockerfile
     image: ie212-spark:4.1.4-iceberg1.11.0
     container_name: ie212-spark
+    init: true
     restart: unless-stopped
     depends_on:
       minio:

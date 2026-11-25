@@ -41,6 +41,7 @@ Environment inventory and hardware constraints for the IE212 Alibaba Microservic
   - MinIO: `pgsty/silo:RELEASE.2026-11-12T00-00-00Z` (API `9000`, Console `9001`).
   - Iceberg REST Catalog: `apache/iceberg-rest-fixture@sha256:009f9f6897cc1e8fd6e8133c401c7a3e7c333c71293a621d06a71570ae989c29` (`8181`, SQLite WAL `/data/iceberg_catalog.db`).
   - Spark & Iceberg: `pyspark==4.1.4`, `org.apache.iceberg:iceberg-spark-runtime-4.1_2.13:1.11.0`, `org.apache.iceberg:iceberg-aws-bundle:1.11.0` (no `hadoop-aws`).
-  - DuckDB: `duckdb==2.0.1`.
+  - DuckDB: `duckdb==2.0.1` (`httpfs` and `iceberg` extensions pre-installed in `ie212-spark` under `HOME=/home/spark`, UID `185:185`).
+  - Core Runtime & Test Dependencies: `pandas>=2.2,<3.0`, `pyarrow>=18.0,<27,!=25.0.0`, `pyyaml==6.0.4`, `boto3==1.44.11`, `pytest==9.2.0`.
 
 Sources: Live Windows CIM/CLI measurements (25 Nov 2026) and external workspace context specifications (`metadata.txt` and `agents_ie212.md`).

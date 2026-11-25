@@ -5,12 +5,19 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
+from typing import Any
 
 import yaml
 
-from ie212.config import ConfigError, load_config, load_project_configs
+from ie212.config import (
+    ConfigError,
+    load_config,
+    load_project_configs,
+    validate_data_config,
+    validate_lakehouse_config,
+)
 from ie212.ingestion.bronze import ingest_bronze
 from ie212.ingestion.manifest import DEFAULT_BRONZE_MANIFEST_PATH, validate_manifest_path
 from ie212.ingestion.schemas import BronzeError
@@ -83,11 +90,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="Override Bronze Parquet output directory (default from configs/data.yaml).",
     )
     parser.add_argument(
+        "--download-dir",
+        default=None,
+        help="Optional directory for temporary downloaded archives (default: ephemeral temp dir).",
+    )
+    parser.add_argument(
         "--manifest-path",
-        default=str(DEFAULT_BRONZE_MANIFEST_PATH),
+        default=None,
         help=(
-            "Path to Bronze JSON manifest (default: artifacts/manifest/bronze_manifest.json; "
-            "refuses protected sample_manifest.json)."
+            "Path to Bronze JSON manifest (default: <bronze.manifest_dir>/bronze_manifest.json "
+            "from configs/data.yaml; refuses protected sample_manifest.json)."
         ),
     )
     parser.add_argument(
@@ -152,15 +164,29 @@ def _flatten(nested: Sequence[Sequence[str]]) -> list[str]:
     return [item for group in nested for item in group]
 
 
+def _resolve_manifest_path(manifest_path: str | None, data_cfg: Mapping[str, Any]) -> Path:
+    if manifest_path is not None:
+        return Path(manifest_path)
+    bronze_cfg = data_cfg.get("bronze", {})
+    if isinstance(bronze_cfg, Mapping):
+        manifest_dir = bronze_cfg.get("manifest_dir")
+        if isinstance(manifest_dir, str) and manifest_dir.strip():
+            return Path(manifest_dir.strip()) / "bronze_manifest.json"
+    return DEFAULT_BRONZE_MANIFEST_PATH
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
     try:
         data_cfg = load_config(args.config, dotenv_path=args.dotenv)
+        validate_data_config(data_cfg)
         lakehouse_cfg = load_config(args.lakehouse_config, dotenv_path=args.dotenv)
+        validate_lakehouse_config(lakehouse_cfg)
         project_configs = load_project_configs(args.config_dir, dotenv_path=args.dotenv)
-        validate_manifest_path(args.manifest_path)
+        effective_manifest_path = _resolve_manifest_path(args.manifest_path, data_cfg)
+        validate_manifest_path(effective_manifest_path)
     except (FileNotFoundError, ConfigError, ValueError, yaml.YAMLError) as exc:
         print(f"Configuration error in stage '{STAGE}': {exc}", file=sys.stderr)
         return 1
@@ -173,7 +199,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "lakehouse_config_loaded": str(Path(args.lakehouse_config)),
             "project_configs": sorted(project_configs.keys()),
             "datasets": sorted(data_cfg.get("datasets", {}).keys()),
-            "manifest_path": str(Path(args.manifest_path)),
+            "manifest_path": str(effective_manifest_path),
             "check_config": True,
         }
         print(json.dumps(payload, indent=2))
@@ -198,7 +224,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             input_paths=flat_inputs,
             urls=flat_urls,
             output_dir=args.output_dir,
-            manifest_path=args.manifest_path,
+            manifest_path=effective_manifest_path,
+            download_dir=args.download_dir,
             data_cfg=data_cfg,
             lakehouse_cfg=lakehouse_cfg,
             compression=args.compression,

@@ -46,6 +46,10 @@ execution_policy:
   fixed_memory_limit_gb: 8
   timeout_seconds: 1800
   cache_policy: "document_cold_and_warm_cache_order"
+  warmup_runs: 1
+  measure_peak_ram: true
+  include_jvm_memory: true
+  measure_spill: true
   force_materialization: true
   record_failures: ["OOM", "timeout", "unsupported"]
   spill_unavailable_marker: "NA"

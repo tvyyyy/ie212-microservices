@@ -10,7 +10,7 @@ from typing import Sequence
 
 import yaml
 
-from ie212.config import ConfigError, load_config, load_project_configs
+from ie212.config import ConfigError, load_config, load_project_configs, validate_lakehouse_config
 
 STAGE = "silver"
 DEFAULT_CONFIG = "configs/lakehouse.yaml"
@@ -49,7 +49,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        load_config(args.config, dotenv_path=args.dotenv)
+        stage_cfg = load_config(args.config, dotenv_path=args.dotenv)
+        validate_lakehouse_config(stage_cfg)
         project_configs = load_project_configs(args.config_dir, dotenv_path=args.dotenv)
     except (FileNotFoundError, ConfigError, yaml.YAMLError) as exc:
         print(f"Configuration error in stage '{STAGE}': {exc}", file=sys.stderr)

@@ -17,11 +17,14 @@ from pathlib import Path
 from typing import Any
 
 import duckdb
+import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
+from botocore.exceptions import BotoCoreError, ClientError
 
 from ie212.config import load_project_configs
 from ie212.ingestion import (
+    PROVENANCE_COLUMNS,
     BronzeError,
     BronzeSchemaError,
     ChecksumMismatchError,
@@ -37,11 +40,15 @@ from ie212.ingestion import (
     ingest_local_file,
     load_manifest,
     normalize_csv_header,
+    parse_content_disposition_filename,
     save_manifest_atomic,
     select_casper_partitions,
     should_skip_entry,
+    upload_partition_to_s3,
     validate_manifest_path,
 )
+from ie212.ingestion.bronze import _derive_filename_from_url
+from ie212.ingestion.s3 import resolve_s3_settings
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -120,16 +127,13 @@ def test_casper_8_col_preserves_traceid_and_sentinels(tmp_path: Path) -> None:
         "interface",
         "rt",
     ]
-    assert table.column_names[8:] == [
-        "source_file",
-        "source_uri",
-        "source_sha256",
-        "source_md5",
-        "ingested_at_utc",
-    ]
+    assert table.column_names[8:] == [name for name, _ in PROVENANCE_COLUMNS]
+    assert "source_row_offset" in table.column_names
+    assert pa.types.is_int64(table.schema.field("source_row_offset").type)
 
     rows = table.to_pylist()
     assert [r["traceid"] for r in rows] == ["tr_001", "tr_002", "tr_003"]
+    assert [r["source_row_offset"] for r in rows] == [0, 1, 2]
     assert rows[1]["rt"] == -4.0  # Negative mq rt preserved
     assert rows[1]["dm"] == "(?)"  # Sentinel preserved verbatim
     assert rows[1]["interface"] == "NAN"
@@ -193,11 +197,23 @@ def test_casper_rejects_leading_unnamed_index_and_selects_partitions() -> None:
     assert subset_a == subset_b
     assert len(subset_a) == round(1999 * 0.10)
     assert all(item.startswith("partition_id=") and item.endswith(".csv.gz") for item in subset_a)
+    pids = [int(item.removeprefix("partition_id=").removesuffix(".csv.gz")) for item in subset_a]
+    assert all(-999 <= pid <= 999 for pid in pids)
+    assert any(pid < 0 for pid in pids)
+    assert select_casper_partitions(partition_min=-999, partition_max=999, ratio=0.10, seed=42) == subset_a
 
     with pytest.raises(ValueError):
         select_casper_partitions(1999, ratio=0.05, seed=42)
     with pytest.raises(ValueError):
         select_casper_partitions(1999, ratio=0.30, seed=42)
+    with pytest.raises(ValueError):
+        select_casper_partitions(True)
+    with pytest.raises(ValueError):
+        select_casper_partitions("partition_id=0.csv.gz")
+    with pytest.raises(ValueError):
+        select_casper_partitions(10, partition_min=-2, partition_max=2)
+    with pytest.raises(ValueError):
+        select_casper_partitions(partition_min=5, partition_max=1)
 
 
 # ---------------------------------------------------------------------------
@@ -321,6 +337,8 @@ def test_tar_gz_multi_member_chunked_streaming(tmp_path: Path, codec: str) -> No
     assert res.timestamp_min == 30000
     assert res.timestamp_max == 150000
     assert len(res.parquet_files) == 2
+    assert pq.read_table(res.parquet_files[0])["source_row_offset"].to_pylist() == [0, 1, 2]
+    assert pq.read_table(res.parquet_files[1])["source_row_offset"].to_pylist() == [0, 1]
 
     meta = pq.ParquetFile(res.parquet_files[0]).metadata
     assert meta.row_group(0).column(0).compression.lower() == codec
@@ -1000,6 +1018,12 @@ def test_url_download_isolates_duplicate_basenames_under_concurrency_2(tmp_path:
             cleanup_temp_archives=True,
         )
         assert summary["files_completed"] == 2
+        assert summary["total_rows"] == 3
+        assert summary["rows_written"] == 3
+        assert pq.read_table(out_dir).num_rows == 3
+        manifest = load_manifest(manifest_path)
+        assert len(manifest["entries"]) == 2
+        assert len({r["source_file_stem"] for r in summary["results"]}) == 2
         hashes = {r["source_sha256"] for r in summary["results"]}
         assert hashes == {
             hashlib.sha256(payload_a).hexdigest(),
@@ -1070,3 +1094,779 @@ def test_extensionless_file_magic_byte_detection(tmp_path: Path) -> None:
     assert res_plain.status == "completed"
     assert res_plain.row_count == 1
     assert res_plain.source_file_stem == "99999"
+
+
+# ---------------------------------------------------------------------------
+# 12. M3 Hardening: signed CASPER -999..999, source_row_offset, collisions,
+#     bounded URL chunking, manifest skip, CD/URL unquoting, single-pass hash,
+#     pre-swap S3 validation, s3.py hardening, safe int64, and run_bronze.py CLI
+# ---------------------------------------------------------------------------
+
+
+def test_casper_signed_negative_partition_config_and_ingestion(tmp_path: Path) -> None:
+    configs = load_project_configs(REPO_ROOT / "configs", environ={})
+    casper_cfg = configs["data"]["datasets"]["casper_mscallgraph"]
+    assert casper_cfg["total_partitions"] == 1999
+    assert casper_cfg["partition_min"] == -999
+    assert casper_cfg["partition_max"] == 999
+
+    schema = get_dataset_schema("casper_mscallgraph", data_cfg=configs["data"])
+    assert schema.partition_min == -999
+    assert schema.partition_max == 999
+
+    src = _write_csv_gz(
+        tmp_path / "partition_id=-999.csv.gz",
+        "traceid,timestamp,rpcid,um,rpctype,dm,interface,rt\n"
+        "t1,1000,0,a,rpc,b,fn1,1.0\n"
+        "t2,2000,0.1,a,rpc,b,fn2,2.0\n",
+    )
+    res = ingest_local_file(
+        src,
+        dataset="casper_mscallgraph",
+        output_dir=tmp_path / "bronze",
+        manifest_path=tmp_path / "manifest.json",
+        data_cfg=configs["data"],
+    )
+    assert res.status == "completed"
+    assert res.source_file_stem == "partition_id_-999"
+    tbl = pq.read_table(res.parquet_files[0])
+    assert tbl["source_row_offset"].to_pylist() == [0, 1]
+
+
+def test_source_row_offset_continuous_across_chunks_oss_and_casper(tmp_path: Path) -> None:
+    oss_csv = tmp_path / "Node_0.csv"
+    oss_csv.write_text(
+        ",timestamp,nodeid,node_cpu_usage,node_memory_usage\n"
+        "10,1000,n0,0.1,0.2\n"
+        "20,2000,n1,0.2,0.3\n"
+        "30,3000,n2,0.3,0.4\n"
+        "40,4000,n3,0.4,0.5\n"
+        "50,5000,n4,0.5,0.6\n",
+        encoding="utf-8",
+    )
+    res_oss = ingest_local_file(
+        oss_csv,
+        dataset="oss_node",
+        output_dir=tmp_path / "bronze_oss",
+        manifest_path=tmp_path / "manifest_oss.json",
+        chunk_rows=2,
+    )
+    assert res_oss.dropped_leading_index is True
+    tbl_oss = pq.read_table(res_oss.parquet_files[0])
+    assert tbl_oss["source_row_offset"].to_pylist() == [0, 1, 2, 3, 4]
+
+    casper_csv = _write_csv_gz(
+        tmp_path / "partition_id=-12.csv.gz",
+        "traceid,timestamp,rpcid,um,rpctype,dm,interface,rt\n"
+        "t0,1000,0,a,rpc,b,f,1.0\n"
+        "t1,2000,0,a,rpc,b,f,1.0\n"
+        "t2,3000,0,a,rpc,b,f,1.0\n"
+        "t3,4000,0,a,rpc,b,f,1.0\n"
+        "t4,5000,0,a,rpc,b,f,1.0\n",
+    )
+    res_casper = ingest_local_file(
+        casper_csv,
+        dataset="casper_mscallgraph",
+        output_dir=tmp_path / "bronze_casper",
+        manifest_path=tmp_path / "manifest_casper.json",
+        chunk_rows=2,
+    )
+    assert res_casper.dropped_leading_index is False
+    tbl_casper = pq.read_table(res_casper.parquet_files[0])
+    assert tbl_casper["source_row_offset"].to_pylist() == [0, 1, 2, 3, 4]
+
+
+def test_duplicate_input_stems_within_batch_and_cross_run(tmp_path: Path) -> None:
+    dir_a = tmp_path / "dir_a"
+    dir_b = tmp_path / "dir_b"
+    dir_a.mkdir()
+    dir_b.mkdir()
+    file_a = dir_a / "Node_0.csv"
+    file_b = dir_b / "Node_0.csv"
+    file_a.write_text(
+        ",timestamp,nodeid,node_cpu_usage,node_memory_usage\n"
+        "0,30000,na1,0.1,0.2\n"
+        "1,60000,na2,0.2,0.3\n",
+        encoding="utf-8",
+    )
+    file_b.write_text(
+        ",timestamp,nodeid,node_cpu_usage,node_memory_usage\n"
+        "0,30000,nb1,0.3,0.4\n"
+        "1,60000,nb2,0.4,0.5\n"
+        "2,90000,nb3,0.5,0.6\n",
+        encoding="utf-8",
+    )
+
+    # 1. Within-batch collision
+    out_batch = tmp_path / "bronze_batch"
+    man_batch = tmp_path / "manifest_batch.json"
+    s1 = ingest_bronze(
+        dataset="oss_node",
+        input_paths=[file_a, file_b],
+        output_dir=out_batch,
+        manifest_path=man_batch,
+    )
+    assert s1["files_completed"] == 2
+    assert s1["total_rows"] == 5
+    assert s1["rows_written"] == 5
+    assert pq.read_table(out_batch).num_rows == 5
+    manifest_batch = load_manifest(man_batch)
+    assert len(manifest_batch["entries"]) == 2
+    assert len({r["source_file_stem"] for r in s1["results"]}) == 2
+
+    # Rerun skips both cleanly
+    s1_rerun = ingest_bronze(
+        dataset="oss_node",
+        input_paths=[file_a, file_b],
+        output_dir=out_batch,
+        manifest_path=man_batch,
+    )
+    assert s1_rerun["files_skipped"] == 2
+    assert s1_rerun["rows_written"] == 0
+
+    # 2. Cross-run collision: first file keeps clean "Node_0", second file disambiguates
+    out_cross = tmp_path / "bronze_cross"
+    man_cross = tmp_path / "manifest_cross.json"
+    c1 = ingest_bronze(
+        dataset="oss_node",
+        input_paths=[file_a],
+        output_dir=out_cross,
+        manifest_path=man_cross,
+    )
+    assert c1["results"][0]["source_file_stem"] == "Node_0"
+    c2 = ingest_bronze(
+        dataset="oss_node",
+        input_paths=[file_b],
+        output_dir=out_cross,
+        manifest_path=man_cross,
+    )
+    assert c2["results"][0]["source_file_stem"].startswith("Node_0_")
+    assert pq.read_table(out_cross).num_rows == 5
+    manifest_cross = load_manifest(man_cross)
+    assert len(manifest_cross["entries"]) == 2
+
+    # Rerun of file_b skips idempotently using disambiguated stem
+    c2_rerun = ingest_bronze(
+        dataset="oss_node",
+        input_paths=[file_b],
+        output_dir=out_cross,
+        manifest_path=man_cross,
+    )
+    assert c2_rerun["files_skipped"] == 1
+    assert c2_rerun["results"][0]["source_file_stem"] == c2["results"][0]["source_file_stem"]
+
+
+@pytest.mark.parametrize("concurrency", [1, 2])
+def test_bounded_url_chunking_cleans_chunk_before_next_chunk(tmp_path: Path, concurrency: int) -> None:
+    dl_dir = tmp_path / f"dl_conc_{concurrency}"
+    payloads = {
+        f"/f{i}.csv.gz": _gzip_bytes(
+            "traceid,timestamp,rpcid,um,rpctype,dm,interface,rt\n"
+            f"t_{i},{1000 + i},0,a,rpc,b,fn,{float(i)}\n"
+        )
+        for i in range(4)
+    }
+    observed_files_during_next_chunk: list[int] = []
+
+    class ChunkHandler(BaseHTTPRequestHandler):
+        def log_message(self, format: str, *args: Any) -> None:
+            return
+
+        def do_GET(self) -> None:
+            if self.path not in payloads:
+                self.send_response(404)
+                self.end_headers()
+                return
+            if self.path == f"/f{concurrency}.csv.gz" and dl_dir.exists():
+                observed_files_during_next_chunk.append(len(list(dl_dir.rglob("*.csv.gz"))))
+            body = payloads[self.path]
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), ChunkHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    base = f"http://127.0.0.1:{server.server_port}"
+
+    try:
+        summary = ingest_bronze(
+            dataset="casper_mscallgraph",
+            urls=[f"{base}/f{i}.csv.gz" for i in range(4)],
+            download_dir=dl_dir,
+            output_dir=tmp_path / f"bronze_{concurrency}",
+            manifest_path=tmp_path / f"manifest_{concurrency}.json",
+            concurrency=concurrency,
+            cleanup_temp_archives=True,
+        )
+        assert summary["files_completed"] == 4
+        assert summary["total_rows"] == 4
+        assert observed_files_during_next_chunk == [0]
+        assert list(dl_dir.rglob("*.csv.gz")) == []
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_temp_archive_preserved_on_ingestion_failure(tmp_path: Path) -> None:
+    bad_payload = _gzip_bytes("wrong,header,columns\n1,2,3\n")
+    good_payload = _gzip_bytes(
+        "traceid,timestamp,rpcid,um,rpctype,dm,interface,rt\n"
+        "t1,1000,0,a,rpc,b,fn,1.0\n"
+    )
+
+    class FailHandler(BaseHTTPRequestHandler):
+        def log_message(self, format: str, *args: Any) -> None:
+            return
+
+        def do_GET(self) -> None:
+            body = bad_payload if self.path == "/bad.csv.gz" else good_payload
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), FailHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    base = f"http://127.0.0.1:{server.server_port}"
+
+    try:
+        dl_dir = tmp_path / "dl_fail"
+        with pytest.raises(BronzeSchemaError):
+            ingest_bronze(
+                dataset="casper_mscallgraph",
+                urls=[f"{base}/bad.csv.gz"],
+                download_dir=dl_dir,
+                output_dir=tmp_path / "bronze_fail",
+                manifest_path=tmp_path / "manifest_fail.json",
+                cleanup_temp_archives=True,
+            )
+        assert (dl_dir / "0000" / "bad.csv.gz").is_file()
+
+        configs = load_project_configs(REPO_ROOT / "configs", environ={})
+        lakehouse_cfg = json.loads(json.dumps(configs["lakehouse"]))
+        lakehouse_cfg["minio"]["access_key"] = "minioadmin"
+        lakehouse_cfg["minio"]["secret_key"] = "minioadmin123"
+
+        class FailingS3Client:
+            def upload_file(self, filename: str, bucket: str, key: str) -> None:
+                raise BotoCoreError()
+
+        dl_dir_s3 = tmp_path / "dl_fail_s3"
+        with pytest.raises(S3UploadError):
+            ingest_bronze(
+                dataset="casper_mscallgraph",
+                urls=[f"{base}/good.csv.gz"],
+                download_dir=dl_dir_s3,
+                output_dir=tmp_path / "bronze_fail_s3",
+                manifest_path=tmp_path / "manifest_fail_s3.json",
+                lakehouse_cfg=lakehouse_cfg,
+                upload_s3=True,
+                s3_client=FailingS3Client(),
+                cleanup_temp_archives=True,
+            )
+        assert (dl_dir_s3 / "0000" / "good.csv.gz").is_file()
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_manifest_url_skip_avoids_http_requests_and_respects_force(tmp_path: Path) -> None:
+    payload = _gzip_bytes(
+        "traceid,timestamp,rpcid,um,rpctype,dm,interface,rt\n"
+        "t1,1000,0,a,rpc,b,fn,1.0\n"
+    )
+    req_count = 0
+
+    class CountingHandler(BaseHTTPRequestHandler):
+        def log_message(self, format: str, *args: Any) -> None:
+            return
+
+        def do_GET(self) -> None:
+            nonlocal req_count
+            req_count += 1
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), CountingHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    url = f"http://127.0.0.1:{server.server_port}/partition_id=-0001.csv.gz"
+
+    try:
+        out_dir = tmp_path / "bronze_skip"
+        man_path = tmp_path / "manifest_skip.json"
+        r1 = ingest_bronze(dataset="casper_mscallgraph", urls=[url], output_dir=out_dir, manifest_path=man_path)
+        assert r1["files_completed"] == 1
+        assert req_count == 1
+
+        req_count = 0
+        r2 = ingest_bronze(dataset="casper_mscallgraph", urls=[url], output_dir=out_dir, manifest_path=man_path)
+        assert r2["files_skipped"] == 1
+        assert r2["rows_written"] == 0
+        assert req_count == 0
+
+        # force=True must re-download
+        r3 = ingest_bronze(
+            dataset="casper_mscallgraph", urls=[url], output_dir=out_dir, manifest_path=man_path, force=True
+        )
+        assert r3["files_completed"] == 1
+        assert req_count == 1
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_url_unquoting_fragment_and_content_disposition(tmp_path: Path) -> None:
+    assert _derive_filename_from_url(
+        "https://example.org/files/partition_id%3D-0005%20test.csv.gz?download=1#top", 0
+    ) == "partition_id=-0005 test.csv.gz"
+    assert parse_content_disposition_filename('attachment; filename="partition_id=-0005.csv.gz"') == "partition_id=-0005.csv.gz"
+    assert parse_content_disposition_filename("attachment; filename*=UTF-8''partition_id%3D-0005.csv.gz") == "partition_id=-0005.csv.gz"
+    assert parse_content_disposition_filename('attachment; filename="../../etc/passwd"') is None
+    assert parse_content_disposition_filename('attachment; filename="..%2F..%2Fevil.csv"') is None
+    assert parse_content_disposition_filename('attachment; filename="bad\x00.csv"') is None
+
+    payload = _gzip_bytes(
+        "traceid,timestamp,rpcid,um,rpctype,dm,interface,rt\n"
+        "t_cd,1000,0,a,rpc,b,fn,2.5\n"
+    )
+    req_count = 0
+
+    class CDHandler(BaseHTTPRequestHandler):
+        def log_message(self, format: str, *args: Any) -> None:
+            return
+
+        def do_GET(self) -> None:
+            nonlocal req_count
+            req_count += 1
+            self.send_response(200)
+            if self.path == "/api/access/datafile/42":
+                self.send_header("Content-Disposition", 'attachment; filename="partition_id=-0005.csv.gz"')
+            else:
+                self.send_header(
+                    "Content-Disposition",
+                    "attachment; filename=\"fallback.csv.gz\"; filename*=UTF-8''partition_id%3D-0006.csv.gz",
+                )
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), CDHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    base = f"http://127.0.0.1:{server.server_port}"
+
+    try:
+        out_dir = tmp_path / "bronze_cd"
+        man_path = tmp_path / "manifest_cd.json"
+        urls = [f"{base}/api/access/datafile/42", f"{base}/api/access/datafile/43"]
+        r1 = ingest_bronze(dataset="casper_mscallgraph", urls=urls, output_dir=out_dir, manifest_path=man_path)
+        assert r1["files_completed"] == 2
+        assert [r["source_file_stem"] for r in r1["results"]] == ["partition_id_-0005", "partition_id_-0006"]
+        assert [r["source_file"] for r in r1["results"]] == [
+            "partition_id=-0005.csv.gz",
+            "partition_id=-0006.csv.gz",
+        ]
+        assert req_count == 2
+
+        req_count = 0
+        r2 = ingest_bronze(dataset="casper_mscallgraph", urls=urls, output_dir=out_dir, manifest_path=man_path)
+        assert r2["files_skipped"] == 2
+        assert req_count == 0
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_single_pass_hashing_and_strict_download_config(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    with pytest.raises(ValueError):
+        DownloadConfig.from_data_config({"download": {"max_concurrency": True}})
+    with pytest.raises(ValueError):
+        DownloadConfig.from_data_config({"download": {"retries": True}})
+    with pytest.raises(ValueError):
+        DownloadConfig.from_data_config({"download": {"timeout_seconds": False}})
+    with pytest.raises(ValueError):
+        DownloadConfig.from_data_config({"download": {"resume": "maybe"}})
+    with pytest.raises(ValueError):
+        DownloadConfig.from_data_config({"download": {"checksum_algorithms": "sha256"}})
+
+    cfg = DownloadConfig.from_data_config(
+        {"download": {"resume": "yes", "cleanup_temp_archives": "false", "verify_checksums": "off"}}
+    )
+    assert cfg.resume is True
+    assert cfg.cleanup_temp_archives is False
+    assert cfg.verify_checksums is False
+
+    payload = _gzip_bytes(
+        "traceid,timestamp,rpcid,um,rpctype,dm,interface,rt\n"
+        "t1,1000,0,a,rpc,b,fn,1.0\n"
+    )
+
+    class SimpleHandler(BaseHTTPRequestHandler):
+        def log_message(self, format: str, *args: Any) -> None:
+            return
+
+        def do_GET(self) -> None:
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), SimpleHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    url = f"http://127.0.0.1:{server.server_port}/partition_id=1.csv.gz"
+
+    disk_rehash_calls = 0
+
+    def fail_if_called(*args: Any, **kwargs: Any) -> Any:
+        nonlocal disk_rehash_calls
+        disk_rehash_calls += 1
+        raise AssertionError("verify_file_checksums should not re-hash fresh wb downloads from disk")
+
+    monkeypatch.setattr("ie212.ingestion.bronze.verify_file_checksums", fail_if_called)
+    monkeypatch.setattr("ie212.ingestion.downloader.verify_file_checksums", fail_if_called)
+
+    try:
+        res = ingest_bronze(
+            dataset="casper_mscallgraph",
+            urls=[url],
+            output_dir=tmp_path / "bronze",
+            manifest_path=tmp_path / "manifest.json",
+        )
+        assert res["files_completed"] == 1
+        assert disk_rehash_calls == 0
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_prevalidate_upload_s3_before_atomic_swap_and_downloads(tmp_path: Path) -> None:
+    src = tmp_path / "Node_0.csv"
+    src.write_text(
+        ",timestamp,nodeid,node_cpu_usage,node_memory_usage\n"
+        "0,30000,orig_node,0.1,0.2\n",
+        encoding="utf-8",
+    )
+    out_dir = tmp_path / "bronze"
+    man_path = tmp_path / "manifest.json"
+    ingest_local_file(src, dataset="oss_node", output_dir=out_dir, manifest_path=man_path)
+    assert pq.read_table(out_dir)["nodeid"].to_pylist() == ["orig_node"]
+
+    # Overwrite source with new content, then run with force=True, upload_s3=True, lakehouse_cfg=None
+    src.write_text(
+        ",timestamp,nodeid,node_cpu_usage,node_memory_usage\n"
+        "0,60000,new_node,0.9,0.9\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(BronzeError, match="lakehouse_cfg is required"):
+        ingest_local_file(
+            src,
+            dataset="oss_node",
+            output_dir=out_dir,
+            manifest_path=man_path,
+            force=True,
+            upload_s3=True,
+            lakehouse_cfg=None,
+        )
+    # Original local Parquet partition must remain untouched!
+    assert pq.read_table(out_dir)["nodeid"].to_pylist() == ["orig_node"]
+
+    # URL download must fail fast with 0 HTTP requests if MinIO creds are missing
+    configs = load_project_configs(REPO_ROOT / "configs", environ={})
+    no_creds_cfg = json.loads(json.dumps(configs["lakehouse"]))
+    no_creds_cfg["minio"]["access_key"] = ""
+    no_creds_cfg["minio"]["secret_key"] = ""
+    req_count = 0
+
+    class UnusedHandler(BaseHTTPRequestHandler):
+        def log_message(self, format: str, *args: Any) -> None:
+            return
+
+        def do_GET(self) -> None:
+            nonlocal req_count
+            req_count += 1
+            self.send_response(200)
+            self.end_headers()
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), UnusedHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with pytest.raises(S3UploadError, match="Missing MinIO/S3 credentials"):
+            ingest_bronze(
+                dataset="oss_node",
+                urls=[f"http://127.0.0.1:{server.server_port}/Node_0.csv"],
+                output_dir=tmp_path / "bronze_url",
+                manifest_path=tmp_path / "manifest_url.json",
+                lakehouse_cfg=no_creds_cfg,
+                upload_s3=True,
+            )
+        assert req_count == 0
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_s3_hardening_env_fallback_bool_parsing_errors_and_stale_cleanup(tmp_path: Path) -> None:
+    configs = load_project_configs(REPO_ROOT / "configs", environ={})
+    lakehouse_cfg = json.loads(json.dumps(configs["lakehouse"]))
+    lakehouse_cfg["minio"]["access_key"] = ""
+    lakehouse_cfg["minio"]["secret_key"] = ""
+    lakehouse_cfg["minio"]["path_style_access"] = "false"
+    lakehouse_cfg["minio"]["use_ssl"] = "no"
+
+    settings = resolve_s3_settings(
+        lakehouse_cfg,
+        environ={
+            "AWS_ACCESS_KEY_ID": "aws_key",
+            "AWS_SECRET_ACCESS_KEY": "aws_secret",
+            "MINIO_ACCESS_KEY": "minio_key",
+            "MINIO_SECRET_KEY": "minio_secret",
+        },
+    )
+    assert settings["access_key"] == "aws_key"
+    assert settings["secret_key"] == "aws_secret"
+    assert settings["path_style_access"] is False
+    assert settings["use_ssl"] is False
+
+    bad_bool_cfg = json.loads(json.dumps(lakehouse_cfg))
+    bad_bool_cfg["minio"]["use_ssl"] = "maybe"
+    with pytest.raises(S3UploadError, match="Invalid boolean value"):
+        resolve_s3_settings(bad_bool_cfg, environ={})
+
+    # BotoCoreError / ClientError wrapping
+    p0 = tmp_path / "part-00000.parquet"
+    p0.write_bytes(b"parquet-bytes")
+
+    class ClientErrorS3:
+        def upload_file(self, filename: str, bucket: str, key: str) -> None:
+            raise ClientError({"Error": {"Code": "500", "Message": "boom"}}, "PutObject")
+
+    with pytest.raises(S3UploadError, match="Failed uploading"):
+        upload_partition_to_s3(
+            [p0],
+            dataset="oss_node",
+            source_file_stem="Node_0",
+            lakehouse_cfg=lakehouse_cfg,
+            s3_client=ClientErrorS3(),
+        )
+
+    # Stale S3 part cleanup on overwrite
+    class StaleCleanupS3:
+        def __init__(self) -> None:
+            self.uploaded: list[str] = []
+            self.deleted: list[str] = []
+
+        def upload_file(self, filename: str, bucket: str, key: str) -> None:
+            self.uploaded.append(key)
+
+        def list_objects_v2(self, *, Bucket: str, Prefix: str, **kwargs: Any) -> dict[str, Any]:
+            return {
+                "IsTruncated": False,
+                "Contents": [
+                    {"Key": f"{Prefix}part-00000.parquet"},
+                    {"Key": f"{Prefix}part-00001.parquet"},
+                    {"Key": f"{Prefix}nested/part-00002.parquet"},
+                    {"Key": f"{Prefix}README.txt"},
+                ],
+            }
+
+        def delete_objects(self, *, Bucket: str, Delete: dict[str, Any]) -> dict[str, Any]:
+            self.deleted.extend(obj["Key"] for obj in Delete["Objects"])
+            return {"Deleted": Delete["Objects"]}
+
+    cleanup_stub = StaleCleanupS3()
+    uris = upload_partition_to_s3(
+        [p0],
+        dataset="oss_node",
+        source_file_stem="Node_0",
+        lakehouse_cfg=lakehouse_cfg,
+        s3_client=cleanup_stub,
+    )
+    assert uris == ["s3://bronze/node/dataset=oss_node/source_file_stem=Node_0/part-00000.parquet"]
+    assert cleanup_stub.deleted == ["node/dataset=oss_node/source_file_stem=Node_0/part-00001.parquet"]
+
+
+def test_safe_timestamp_coercion_inf_non_integer_and_uint64_overflow(tmp_path: Path) -> None:
+    src = _write_csv_gz(
+        tmp_path / "partition_id=00099.csv.gz",
+        "traceid,timestamp,rpcid,um,rpctype,dm,interface,rt\n"
+        "t1,1000,0,a,rpc,b,fn,1.0\n"
+        "t2,30000.0,0,a,rpc,b,fn,1.0\n"
+        "t3,inf,0,a,rpc,b,fn,1.0\n"
+        "t4,-inf,0,a,rpc,b,fn,1.0\n"
+        "t5,30000.5,0,a,rpc,b,fn,1.0\n"
+        "t6,nan,0,a,rpc,b,fn,1.0\n"
+        "t7,9223372036854775808,0,a,rpc,b,fn,1.0\n",
+    )
+    res = ingest_local_file(
+        src,
+        dataset="casper_mscallgraph",
+        output_dir=tmp_path / "bronze",
+        manifest_path=tmp_path / "manifest.json",
+    )
+    assert res.status == "completed"
+    assert res.row_count == 7
+    assert res.timestamp_min == 1000
+    assert res.timestamp_max == 30000
+    assert res.null_timestamp_count == 5
+    tbl = pq.read_table(res.parquet_files[0])
+    assert pa.types.is_int64(tbl.schema.field("timestamp").type)
+    assert tbl["timestamp"].to_pylist() == [1000, 30000, None, None, None, None, None]
+
+
+def test_cli_run_bronze_download_dir_manifest_dir_fallback_and_config_validation(tmp_path: Path) -> None:
+    env = dict(os.environ)
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+
+    # --help exposes --download-dir
+    help_proc = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "run_bronze.py"), "--help"],
+        cwd=str(REPO_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert help_proc.returncode == 0
+    assert "--download-dir" in help_proc.stdout
+
+    # Custom data.yaml bronze.manifest_dir is honored when --manifest-path is omitted
+    custom_manifest_dir = tmp_path / "custom_manifests"
+    custom_out_dir = tmp_path / "custom_bronze_out"
+    custom_data_cfg = (REPO_ROOT / "configs" / "data.yaml").read_text(encoding="utf-8")
+    custom_data_cfg = custom_data_cfg.replace(
+        'manifest_dir: "artifacts/manifest"',
+        f'manifest_dir: "{custom_manifest_dir.as_posix()}"',
+    ).replace(
+        'output_dir: "data/raw/bronze"',
+        f'output_dir: "{custom_out_dir.as_posix()}"',
+    )
+    data_cfg_path = tmp_path / "custom_data.yaml"
+    data_cfg_path.write_text(custom_data_cfg, encoding="utf-8")
+
+    check_proc = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "scripts" / "run_bronze.py"),
+            "--check-config",
+            "--config",
+            str(data_cfg_path),
+        ],
+        cwd=str(REPO_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert check_proc.returncode == 0, check_proc.stderr
+    check_payload = json.loads(check_proc.stdout)
+    assert Path(check_payload["manifest_path"]) == custom_manifest_dir / "bronze_manifest.json"
+
+    # Invalid custom --config fails with exit code 1
+    bad_data_path = tmp_path / "bad_data.yaml"
+    bad_data_path.write_text(
+        custom_data_cfg.replace("max_concurrency: 2", "max_concurrency: 4"),
+        encoding="utf-8",
+    )
+    bad_data_proc = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "scripts" / "run_bronze.py"),
+            "--check-config",
+            "--config",
+            str(bad_data_path),
+        ],
+        cwd=str(REPO_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert bad_data_proc.returncode == 1
+
+    # Invalid custom --lakehouse-config fails with exit code 1
+    bad_lh_cfg = (REPO_ROOT / "configs" / "lakehouse.yaml").read_text(encoding="utf-8").replace(
+        '    - "bronze"\n',
+        "",
+    )
+    bad_lh_path = tmp_path / "bad_lakehouse.yaml"
+    bad_lh_path.write_text(bad_lh_cfg, encoding="utf-8")
+    bad_lh_proc = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "scripts" / "run_bronze.py"),
+            "--check-config",
+            "--lakehouse-config",
+            str(bad_lh_path),
+        ],
+        cwd=str(REPO_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert bad_lh_proc.returncode == 1
+
+    # --download-dir + --no-cleanup-temp-archives + default manifest_dir via CLI
+    archive_bytes = _write_tar_gz(
+        tmp_path / "src" / "Node_0.tar.gz",
+        {
+            "Node_0.csv": (
+                ",timestamp,nodeid,node_cpu_usage,node_memory_usage\n"
+                "0,30000,n_cli,0.2,0.3\n"
+            ).encode("utf-8")
+        },
+    ).read_bytes()
+
+    class CLIArchiveHandler(BaseHTTPRequestHandler):
+        def log_message(self, format: str, *args: Any) -> None:
+            return
+
+        def do_GET(self) -> None:
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(archive_bytes)))
+            self.end_headers()
+            self.wfile.write(archive_bytes)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), CLIArchiveHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        cli_dl_dir = tmp_path / "cli_dl_dir"
+        run_proc = subprocess.run(
+            [
+                sys.executable,
+                str(REPO_ROOT / "scripts" / "run_bronze.py"),
+                "--config",
+                str(data_cfg_path),
+                "--dataset",
+                "oss_node",
+                "--url",
+                f"http://127.0.0.1:{server.server_port}/Node_0.tar.gz",
+                "--download-dir",
+                str(cli_dl_dir),
+                "--no-cleanup-temp-archives",
+            ],
+            cwd=str(REPO_ROOT),
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert run_proc.returncode == 0, run_proc.stderr
+        payload = json.loads(run_proc.stdout)
+        assert payload["files_completed"] == 1
+        assert (custom_manifest_dir / "bronze_manifest.json").is_file()
+        assert (cli_dl_dir / "0000" / "Node_0.tar.gz").is_file()
+    finally:
+        server.shutdown()
+        server.server_close()

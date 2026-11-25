@@ -104,6 +104,7 @@ def should_skip_entry(
     md5: str,
     output_dir: str | Path | None = None,
     force: bool = False,
+    source_origin: str | None = None,
 ) -> bool:
     """Return True if an identical completed Bronze partition already exists on disk."""
     if force:
@@ -119,6 +120,10 @@ def should_skip_entry(
         return False
     if entry.get("status") != "completed":
         return False
+    if source_origin is not None:
+        recorded_origin = entry.get("source_origin")
+        if isinstance(recorded_origin, str) and recorded_origin and recorded_origin != source_origin:
+            return False
     if entry.get("source_sha256") != sha256 or entry.get("source_md5") != md5:
         return False
 
@@ -164,6 +169,7 @@ def build_manifest_entry(
     ingested_at_utc: str,
     status: str = "completed",
     s3_uris: Sequence[str] | None = None,
+    source_origin: str | None = None,
 ) -> dict[str, Any]:
     """Create a normalized manifest entry dictionary."""
     entry: dict[str, Any] = {
@@ -184,6 +190,8 @@ def build_manifest_entry(
         "status": status,
         "ingested_at_utc": ingested_at_utc,
     }
+    if source_origin:
+        entry["source_origin"] = source_origin
     if s3_uris:
         entry["s3_uris"] = list(s3_uris)
     return entry

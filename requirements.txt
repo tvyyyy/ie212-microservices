@@ -10,8 +10,8 @@ pyarrow>=18.0,<27,!=25.0.0
 duckdb==2.0.1
 pyspark==4.1.4
 pyyaml==6.0.4
-boto3
-pytest
+boto3==1.44.11
+pytest==9.2.0
 
 # Week 2+ optional dependencies (install via `uv pip install -e ".[ml,viz]"` or `".[all]"`):
 # lightgbm

@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import importlib.util
 import json
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import duckdb
+import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
+import yaml
 
-from ie212.config import load_config
+from ie212.config import ConfigError, load_config
 from ie212.smoke_test import (
     EXPECTED_COLUMNS,
     EXPECTED_DISTINCT_TRACES,
@@ -20,8 +23,10 @@ from ie212.smoke_test import (
     EXPECTED_RPCTYPE_COUNT,
     EXPECTED_SUM_RT,
     REDACTED_VALUE,
+    LakehouseConnectionSettings,
     SmokeTestConfigError,
     SmokeTestRuntimeError,
+    _find_fallback_parquet_source,
     build_duckdb_attach_sql,
     build_duckdb_s3_secret_sql,
     build_spark_iceberg_conf,
@@ -160,10 +165,24 @@ def test_build_spark_iceberg_conf_and_prebaked_jar_detection(tmp_path: Path) -> 
     assert "software.amazon.awssdk:bundle" not in conf_with_pkgs["spark.jars.packages"]
     assert not any(k.startswith("spark.hadoop.fs.s3a") for k in conf_with_pkgs)
 
-    # Pre-baked JARs present -> skips spark.jars.packages
+    # Partial pre-baked JARs (runtime-only or bundle-only) -> still requires spark.jars.packages
+    runtime_only_dir = tmp_path / "runtime_only_jars"
+    runtime_only_dir.mkdir()
+    (runtime_only_dir / "iceberg-spark-runtime-4.1_2.13-1.11.0.jar").write_text("", encoding="utf-8")
+    assert not has_prebaked_iceberg_jars(runtime_only_dir)
+    assert "spark.jars.packages" in build_spark_iceberg_conf(settings, jars_dir=runtime_only_dir)
+
+    bundle_only_dir = tmp_path / "bundle_only_jars"
+    bundle_only_dir.mkdir()
+    (bundle_only_dir / "iceberg-aws-bundle-1.11.0.jar").write_text("", encoding="utf-8")
+    assert not has_prebaked_iceberg_jars(bundle_only_dir)
+    assert "spark.jars.packages" in build_spark_iceberg_conf(settings, jars_dir=bundle_only_dir)
+
+    # Both pre-baked JARs present -> skips spark.jars.packages
     prebaked_dir = tmp_path / "spark_jars"
     prebaked_dir.mkdir()
     (prebaked_dir / "iceberg-spark-runtime-4.1_2.13-1.11.0.jar").write_text("", encoding="utf-8")
+    (prebaked_dir / "iceberg-aws-bundle-1.11.0.jar").write_text("", encoding="utf-8")
     assert has_prebaked_iceberg_jars(prebaked_dir)
     conf_prebaked = build_spark_iceberg_conf(settings, jars_dir=prebaked_dir)
     assert "spark.jars.packages" not in conf_prebaked
@@ -351,7 +370,8 @@ def test_duckdb_sql_builders_escaping_identifiers_and_redaction() -> None:
     assert "ATTACH '' AS ie212 (" in attach_sql
     assert "TYPE iceberg," in attach_sql
     assert "ENDPOINT 'http://localhost:8181'," in attach_sql
-    assert "AUTHORIZATION_TYPE none" in attach_sql
+    assert "AUTHORIZATION_TYPE none," in attach_sql
+    assert "ACCESS_DELEGATION_MODE 'none'" in attach_sql
 
 
 def test_local_duckdb_parquet_smoke_test_real_execution(tmp_path: Path) -> None:
@@ -806,4 +826,234 @@ def test_duckdb_loads_extensions_before_install() -> None:
     res_miss = run_duckdb_iceberg_smoke_test(settings, connection_factory=lambda: missing_ice)
     assert res_miss.status == "passed"
     assert missing_ice.executed[:3] == ["LOAD httpfs;", "LOAD iceberg;", "INSTALL iceberg; LOAD iceberg;"]
+
+
+def test_run_spark_smoke_test_excludes_export_and_stop_from_elapsed_seconds(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cfg = _load_sample_cfg(
+        {"MINIO_ACCESS_KEY": "spark_user", "MINIO_SECRET_KEY": "spark_pass_123"}
+    )
+    settings = resolve_lakehouse_settings(cfg, target="container", require_credentials=True)
+
+    clock = {"now": 100.0}
+    monkeypatch.setattr(
+        "ie212.smoke_test.time",
+        SimpleNamespace(perf_counter=lambda: clock["now"]),
+    )
+
+    class TimedParquetWriter:
+        def mode(self, _mode: str) -> "TimedParquetWriter":
+            return self
+
+        def parquet(self, path: str) -> None:
+            clock["now"] += 5.0
+            out_dir = Path(path)
+            out_dir.mkdir(parents=True, exist_ok=True)
+            pq.write_table(get_smoke_test_arrow_table(), out_dir / "part-00000.parquet")
+
+    class TimedWriteTo:
+        def using(self, _fmt: str) -> "TimedWriteTo":
+            return self
+
+        def createOrReplace(self) -> None:
+            pass
+
+    class TimedDataFrame:
+        def __init__(self) -> None:
+            self.columns = list(EXPECTED_COLUMNS)
+            self.write = TimedParquetWriter()
+
+        def writeTo(self, _table_name: str) -> TimedWriteTo:
+            return TimedWriteTo()
+
+        def coalesce(self, _n: int) -> "TimedDataFrame":
+            return self
+
+    class TimedQueryResult:
+        def __init__(self, rows: list[dict[str, Any]]) -> None:
+            self._rows = rows
+
+        def collect(self) -> list[dict[str, Any]]:
+            return self._rows
+
+    class TimedSparkSession:
+        def sql(self, query: str) -> TimedQueryResult:
+            if query.startswith("SELECT COUNT(*)"):
+                clock["now"] += 1.25
+                return TimedQueryResult(
+                    [
+                        {
+                            "row_count": EXPECTED_ROW_COUNT,
+                            "distinct_traces": EXPECTED_DISTINCT_TRACES,
+                            "sum_rt": EXPECTED_SUM_RT,
+                            "rpctype_count": EXPECTED_RPCTYPE_COUNT,
+                        }
+                    ]
+                )
+            return TimedQueryResult([])
+
+        def createDataFrame(self, _rows: Any, schema: Any = None) -> TimedDataFrame:
+            assert schema is not None
+            return TimedDataFrame()
+
+        def table(self, _table_name: str) -> TimedDataFrame:
+            return TimedDataFrame()
+
+        def stop(self) -> None:
+            clock["now"] += 10.0
+
+    result = run_spark_smoke_test(
+        settings,
+        fallback_dir=tmp_path / "timed_fb",
+        export_fallback=True,
+        spark_session_factory=lambda _conf: TimedSparkSession(),
+        skip_java_check=True,
+    )
+    assert result.elapsed_seconds == pytest.approx(1.25)
+    assert result.export_elapsed_seconds == pytest.approx(5.0)
+
+
+def test_find_fallback_parquet_source_prefers_directory_over_stale_file(tmp_path: Path) -> None:
+    cfg = _load_sample_cfg(
+        {"MINIO_ACCESS_KEY": "my_access_key", "MINIO_SECRET_KEY": "my_secret_pass_99"}
+    )
+    settings = resolve_lakehouse_settings(cfg, target="container", require_credentials=True)
+
+    # Non-existent fallback directory returns None
+    assert _find_fallback_parquet_source(tmp_path / "does_not_exist", "smoke_test_calls") is None
+
+    fb_dir = tmp_path / "fb_priority"
+    fb_dir.mkdir()
+    stale_single = fb_dir / "smoke_test_calls.parquet"
+    stale_table = pa.table({"stale_col": pa.array([1], type=pa.int64())})
+    pq.write_table(stale_table, stale_single)
+
+    # Empty dir, _SUCCESS-only dir, and nested .parquet/ subdir fall back to single file
+    export_dir = fb_dir / "smoke_test_calls"
+    export_dir.mkdir()
+    assert _find_fallback_parquet_source(fb_dir, "smoke_test_calls") == stale_single
+
+    (export_dir / "_SUCCESS").write_text("", encoding="utf-8")
+    (export_dir / "nested.parquet").mkdir()
+    assert _find_fallback_parquet_source(fb_dir, "smoke_test_calls") == stale_single
+
+    # Removing single file with no valid parquet files in export_dir returns None
+    stale_single.unlink()
+    assert _find_fallback_parquet_source(fb_dir, "smoke_test_calls") is None
+
+    # Restore stale single file AND write real Spark-style part-*.parquet in export_dir
+    pq.write_table(stale_table, stale_single)
+    pq.write_table(get_smoke_test_arrow_table(), export_dir / "part-00000.parquet")
+    assert _find_fallback_parquet_source(fb_dir, "smoke_test_calls") == export_dir
+
+    class FailingIcebergConn:
+        def execute(self, sql: str) -> Any:
+            if sql.startswith("ATTACH "):
+                raise duckdb.IOException("Iceberg REST unreachable")
+            return SimpleNamespace(fetchall=lambda: [], fetchone=lambda: None)
+
+        def close(self) -> None:
+            pass
+
+    fb_res = run_duckdb_iceberg_smoke_test(
+        settings,
+        fallback_dir=fb_dir,
+        fallback_on_error=True,
+        connection_factory=FailingIcebergConn,
+    )
+    assert fb_res.status == "passed"
+    assert fb_res.fallback_used is True
+    assert fb_res.fallback_parquet_path == str(export_dir)
+    assert fb_res.row_count == EXPECTED_ROW_COUNT
+    assert fb_res.sum_rt == pytest.approx(EXPECTED_SUM_RT)
+
+
+def test_duckdb_access_delegation_mode_default_override_and_validation(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Default when omitted or None -> "none"
+    for mutate in ("omit", "none"):
+        cfg = _load_sample_cfg(
+            {"MINIO_ACCESS_KEY": "k1", "MINIO_SECRET_KEY": "s1"}
+        )
+        if mutate == "omit":
+            cfg["duckdb"].pop("access_delegation_mode", None)
+        else:
+            cfg["duckdb"]["access_delegation_mode"] = None
+        settings = resolve_lakehouse_settings(cfg, target="container", require_credentials=True)
+        assert settings.duckdb_access_delegation_mode == "none"
+        assert "ACCESS_DELEGATION_MODE 'none'" in build_duckdb_attach_sql(settings)
+
+    # Valid override (including whitespace/case normalization)
+    for raw_mode in ("vended_credentials", " VENDED_CREDENTIALS "):
+        cfg = _load_sample_cfg(
+            {"MINIO_ACCESS_KEY": "k1", "MINIO_SECRET_KEY": "s1"}
+        )
+        cfg["duckdb"]["access_delegation_mode"] = raw_mode
+        settings = resolve_lakehouse_settings(cfg, target="local", require_credentials=True)
+        assert settings.duckdb_access_delegation_mode == "vended_credentials"
+        attach_sql = build_duckdb_attach_sql(settings)
+        assert "ACCESS_DELEGATION_MODE 'vended_credentials'" in attach_sql
+
+        dry_duck = run_duckdb_iceberg_smoke_test(settings, dry_run=True)
+        assert "ACCESS_DELEGATION_MODE 'vended_credentials'" in dry_duck.details["attach_sql"]
+        dry_all = run_smoke_test(settings, mode="all", dry_run=True)
+        assert dry_all["settings"]["duckdb_access_delegation_mode"] == "vended_credentials"
+        assert "ACCESS_DELEGATION_MODE 'vended_credentials'" in dry_all["results"][1]["details"]["attach_sql"]
+
+    # Backward-compatible construction of LakehouseConnectionSettings without explicit field
+    base_settings = resolve_lakehouse_settings(_load_sample_cfg({}), require_credentials=False)
+    legacy_kwargs = {
+        k: v
+        for k, v in base_settings.__dict__.items()
+        if k != "duckdb_access_delegation_mode"
+    }
+    legacy_settings = LakehouseConnectionSettings(**legacy_kwargs)
+    assert legacy_settings.duckdb_access_delegation_mode == "none"
+
+    # Invalid mode strings / SQL injection payloads raise SmokeTestConfigError
+    for bad_str in ("invalid_mode", "auto", "none'; DROP TABLE x;--"):
+        cfg = _load_sample_cfg({})
+        cfg["duckdb"]["access_delegation_mode"] = bad_str
+        with pytest.raises(SmokeTestConfigError, match="access_delegation_mode"):
+            resolve_lakehouse_settings(cfg, require_credentials=False)
+
+        tampered = replace(base_settings, duckdb_access_delegation_mode=bad_str)
+        with pytest.raises(SmokeTestConfigError, match="access_delegation_mode"):
+            build_duckdb_attach_sql(tampered)
+
+    # Tampered non-string type in build_duckdb_attach_sql raises SmokeTestConfigError
+    tampered_type = replace(base_settings, duckdb_access_delegation_mode=123)  # type: ignore[arg-type]
+    with pytest.raises(SmokeTestConfigError, match="access_delegation_mode"):
+        build_duckdb_attach_sql(tampered_type)
+
+    # Empty/whitespace/non-string in resolve_lakehouse_settings raises ConfigError
+    for empty_or_bad_type in ("", "   ", 123):
+        cfg = _load_sample_cfg({})
+        cfg["duckdb"]["access_delegation_mode"] = empty_or_bad_type
+        with pytest.raises(ConfigError, match="access_delegation_mode"):
+            resolve_lakehouse_settings(cfg, require_credentials=False)
+
+    # CLI rejection for invalid access_delegation_mode in custom config YAML
+    bad_cfg = _load_sample_cfg({})
+    bad_cfg["duckdb"]["access_delegation_mode"] = "invalid"
+    bad_yaml = tmp_path / "bad_lakehouse.yaml"
+    bad_yaml.write_text(yaml.safe_dump(bad_cfg), encoding="utf-8")
+    rc = run_smoke_cli(
+        [
+            "--config",
+            str(bad_yaml),
+            "--dotenv",
+            str(tmp_path / "missing.env"),
+            "--mode",
+            "all",
+            "--dry-run",
+        ]
+    )
+    assert rc == 1
+    assert "access_delegation_mode" in capsys.readouterr().err
+
 

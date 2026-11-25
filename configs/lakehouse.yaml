@@ -38,6 +38,7 @@ duckdb:
   version: "2.0.1"
   attach_type: "iceberg"
   authorization_type: "none"
+  access_delegation_mode: "none"
   use_ssl: false
   url_style: "path"
   s3_secret_name: "minio_s3"

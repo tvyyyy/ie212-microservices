@@ -228,6 +228,7 @@ class LakehouseConnectionSettings:
     duckdb_authorization_type: str
     duckdb_url_style: str
     parquet_fallback_dir: str
+    duckdb_access_delegation_mode: str = "none"
 
     def to_redacted_dict(self) -> dict[str, Any]:
         """Serialize settings with credentials strictly redacted."""
@@ -353,6 +354,23 @@ def resolve_lakehouse_settings(
         raise SmokeTestConfigError(
             f"Invalid DuckDB url_style {duckdb_url_style!r}: expected 'path' or 'vhost'"
         )
+    raw_access_delegation_mode = duckdb_cfg.get("access_delegation_mode")
+    if raw_access_delegation_mode is None:
+        duckdb_access_delegation_mode = "none"
+    elif (
+        not isinstance(raw_access_delegation_mode, str)
+        or not raw_access_delegation_mode.strip()
+    ):
+        raise SmokeTestConfigError(
+            "Invalid DuckDB access_delegation_mode: expected 'none' or 'vended_credentials'"
+        )
+    else:
+        duckdb_access_delegation_mode = raw_access_delegation_mode.strip().lower()
+    if duckdb_access_delegation_mode not in ("none", "vended_credentials"):
+        raise SmokeTestConfigError(
+            f"Invalid DuckDB access_delegation_mode {duckdb_access_delegation_mode!r}: "
+            "expected 'none' or 'vended_credentials'"
+        )
 
     use_ssl_cfg = minio.get("use_ssl")
     if use_ssl_cfg is None:
@@ -398,6 +416,7 @@ def resolve_lakehouse_settings(
         parquet_fallback_dir=str(
             duckdb_cfg.get("parquet_fallback_dir") or "artifacts/lakehouse_fallback"
         ).strip(),
+        duckdb_access_delegation_mode=duckdb_access_delegation_mode,
     )
 
 
@@ -449,11 +468,13 @@ def check_java_for_spark(min_major: int = 17) -> int:
 
 
 def has_prebaked_iceberg_jars(jars_dir: str | Path = "/opt/spark/jars") -> bool:
-    """Return True when pre-baked Iceberg Spark runtime JARs exist in jars_dir."""
+    """Return True when both Iceberg Spark runtime and AWS bundle JARs exist in jars_dir."""
     directory = Path(jars_dir)
     if not directory.is_dir():
         return False
-    return any(directory.glob("iceberg-spark-runtime-*.jar"))
+    has_runtime = any(p.is_file() for p in directory.glob("iceberg-spark-runtime-*.jar"))
+    has_aws_bundle = any(p.is_file() for p in directory.glob("iceberg-aws-bundle-*.jar"))
+    return has_runtime and has_aws_bundle
 
 
 def build_spark_iceberg_conf(
@@ -549,11 +570,23 @@ def build_duckdb_attach_sql(
     auth_type = validate_sql_identifier(
         settings.duckdb_authorization_type, label="authorization_type"
     )
+    raw_adm = settings.duckdb_access_delegation_mode
+    if not isinstance(raw_adm, str):
+        raise SmokeTestConfigError(
+            f"Invalid DuckDB access_delegation_mode type: {type(raw_adm).__name__}"
+        )
+    access_delegation_mode = raw_adm.strip().lower()
+    if access_delegation_mode not in ("none", "vended_credentials"):
+        raise SmokeTestConfigError(
+            f"Invalid DuckDB access_delegation_mode {raw_adm!r}: "
+            "expected 'none' or 'vended_credentials'"
+        )
     return (
         f"ATTACH '{escape_sql_literal(attach_target)}' AS {catalog_alias} (\n"
         f"    TYPE {attach_type},\n"
         f"    ENDPOINT '{escape_sql_literal(settings.catalog_uri)}',\n"
-        f"    AUTHORIZATION_TYPE {auth_type}\n"
+        f"    AUTHORIZATION_TYPE {auth_type},\n"
+        f"    ACCESS_DELEGATION_MODE '{escape_sql_literal(access_delegation_mode)}'\n"
         f");"
     )
 
@@ -658,13 +691,13 @@ def _query_duckdb_parquet_metrics(conn: Any, parquet_source: Path) -> dict[str, 
 
 
 def _find_fallback_parquet_source(fallback_dir: Path, table: str) -> Path | None:
-    """Find either <fallback_dir>/<table>.parquet or <fallback_dir>/<table> directory."""
+    """Find <fallback_dir>/<table> directory (preferred) or <fallback_dir>/<table>.parquet."""
+    dir_target = fallback_dir / table
+    if dir_target.is_dir() and any(p.is_file() for p in dir_target.glob("*.parquet")):
+        return dir_target
     single_file = fallback_dir / f"{table}.parquet"
     if single_file.is_file():
         return single_file
-    dir_target = fallback_dir / table
-    if dir_target.is_dir() and any(dir_target.glob("*.parquet")):
-        return dir_target
     return None
 
 
@@ -856,6 +889,7 @@ def run_spark_smoke_test(
             columns=read_columns,
             context=f"Spark Iceberg({full_table})",
         )
+        elapsed = round(time.perf_counter() - start, 6)
 
         if export_fallback:
             export_start = time.perf_counter()
@@ -882,7 +916,6 @@ def run_spark_smoke_test(
         if spark is not None:
             spark.stop()
 
-    elapsed = round(time.perf_counter() - start, 6)
     return SmokeTestResult(
         mode="spark",
         status="passed",
@@ -1004,7 +1037,7 @@ def run_duckdb_iceberg_smoke_test(
             elapsed_seconds=elapsed,
             fallback_used=False,
             engine_limits=[
-                "First DuckDB httpfs/iceberg LOAD downloads extensions over HTTPS.",
+                "DuckDB httpfs/iceberg extensions are pre-installed in ie212-spark (HOME=/home/spark); host .venv runs download on first LOAD.",
                 "MinIO S3 secret requires URL_STYLE 'path' and USE_SSL false.",
             ],
             details={

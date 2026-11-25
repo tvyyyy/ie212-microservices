@@ -204,8 +204,19 @@ def load_config(
         return data
 
     merged_env: dict[str, str] = {}
-    if dotenv_path is not None and Path(dotenv_path).is_file():
-        merged_env.update(parse_dotenv(dotenv_path))
+    resolved_dotenv: Path | None = None
+    if dotenv_path is not None:
+        dotenv_candidate = Path(dotenv_path)
+        if dotenv_candidate.is_file():
+            resolved_dotenv = dotenv_candidate
+        elif dotenv_candidate == Path(".env"):
+            resolved_cfg = config_path.resolve()
+            for probe in (resolved_cfg.parent / ".env", resolved_cfg.parent.parent / ".env"):
+                if probe.is_file():
+                    resolved_dotenv = probe
+                    break
+    if resolved_dotenv is not None:
+        merged_env.update(parse_dotenv(resolved_dotenv))
     merged_env.update(os.environ if environ is None else environ)
     return interpolate_env_vars(data, merged_env)
 
@@ -284,8 +295,13 @@ def validate_data_config(data_cfg: Mapping[str, Any]) -> None:
 
     download = data_cfg["download"]
     max_concurrency = download.get("max_concurrency")
-    if not isinstance(max_concurrency, int) or isinstance(max_concurrency, bool) or max_concurrency < 1:
-        raise ConfigError("data.download.max_concurrency must be an integer >= 1")
+    if (
+        not isinstance(max_concurrency, int)
+        or isinstance(max_concurrency, bool)
+        or max_concurrency < 1
+        or max_concurrency > 2
+    ):
+        raise ConfigError("data.download.max_concurrency must be an integer between 1 and 2")
 
 
 def validate_lakehouse_config(lakehouse_cfg: Mapping[str, Any]) -> None:
@@ -329,6 +345,62 @@ def validate_lakehouse_config(lakehouse_cfg: Mapping[str, Any]) -> None:
             f"lakehouse.iceberg.namespaces must include {sorted(required_namespaces)}, got {sorted(namespaces)}"
         )
 
+    duckdb_cfg = lakehouse_cfg["duckdb"]
+    if "access_delegation_mode" in duckdb_cfg and duckdb_cfg["access_delegation_mode"] is not None:
+        adm = duckdb_cfg["access_delegation_mode"]
+        if not isinstance(adm, str) or not adm.strip():
+            raise ConfigError("lakehouse.duckdb.access_delegation_mode must be a non-empty string")
+
+
+def validate_features_config(features_cfg: Mapping[str, Any]) -> None:
+    """Validate features.yaml target, temporal split, and A/B/C feature sets."""
+    validate_required_keys(
+        features_cfg,
+        ("target", "temporal_split", "feature_sets"),
+        context="features",
+    )
+    for key in ("target", "temporal_split", "feature_sets"):
+        _require_mapping(features_cfg[key], context=f"features.{key}")
+
+    feature_sets = features_cfg["feature_sets"]
+    validate_required_keys(
+        feature_sets,
+        ("A", "B", "C"),
+        context="features.feature_sets",
+    )
+    for key in ("A", "B", "C"):
+        _require_mapping(feature_sets[key], context=f"features.feature_sets.{key}")
+
+
+def validate_experiments_config(experiments_cfg: Mapping[str, Any]) -> None:
+    """Validate experiments.yaml run, models, and evaluation sections."""
+    validate_required_keys(
+        experiments_cfg,
+        ("run", "models", "evaluation"),
+        context="experiments",
+    )
+    for key in ("run", "models", "evaluation"):
+        _require_mapping(experiments_cfg[key], context=f"experiments.{key}")
+
+
+def validate_benchmarks_config(benchmarks_cfg: Mapping[str, Any]) -> None:
+    """Validate benchmarks.yaml engines, workloads, scales, repetitions, and execution_policy."""
+    validate_required_keys(
+        benchmarks_cfg,
+        ("engines", "workloads", "scales", "repetitions"),
+        context="benchmarks",
+    )
+    for key in ("engines", "workloads"):
+        _require_mapping(benchmarks_cfg[key], context=f"benchmarks.{key}")
+    scales = _require_sequence(benchmarks_cfg["scales"], context="benchmarks.scales")
+    if not scales:
+        raise ConfigError("benchmarks.scales must be a non-empty sequence")
+    repetitions = benchmarks_cfg["repetitions"]
+    if not isinstance(repetitions, int) or isinstance(repetitions, bool) or repetitions < 1:
+        raise ConfigError("benchmarks.repetitions must be an integer >= 1")
+    if "execution_policy" in benchmarks_cfg:
+        _require_mapping(benchmarks_cfg["execution_policy"], context="benchmarks.execution_policy")
+
 
 def validate_project_configs(configs: Mapping[str, Mapping[str, Any]]) -> None:
     """Validate all five IE212 YAML configuration sections."""
@@ -338,37 +410,9 @@ def validate_project_configs(configs: Mapping[str, Mapping[str, Any]]) -> None:
 
     validate_data_config(configs["data"])
     validate_lakehouse_config(configs["lakehouse"])
-
-    features = configs["features"]
-    validate_required_keys(
-        features,
-        ("target", "temporal_split", "feature_sets"),
-        context="features",
-    )
-    for key in ("target", "temporal_split", "feature_sets"):
-        _require_mapping(features[key], context=f"features.{key}")
-
-    experiments = configs["experiments"]
-    validate_required_keys(
-        experiments,
-        ("run", "models", "evaluation"),
-        context="experiments",
-    )
-    for key in ("run", "models", "evaluation"):
-        _require_mapping(experiments[key], context=f"experiments.{key}")
-
-    benchmarks = configs["benchmarks"]
-    validate_required_keys(
-        benchmarks,
-        ("engines", "workloads", "scales", "repetitions"),
-        context="benchmarks",
-    )
-    for key in ("engines", "workloads"):
-        _require_mapping(benchmarks[key], context=f"benchmarks.{key}")
-    _require_sequence(benchmarks["scales"], context="benchmarks.scales")
-    repetitions = benchmarks["repetitions"]
-    if not isinstance(repetitions, int) or isinstance(repetitions, bool) or repetitions < 1:
-        raise ConfigError("benchmarks.repetitions must be an integer >= 1")
+    validate_features_config(configs["features"])
+    validate_experiments_config(configs["experiments"])
+    validate_benchmarks_config(configs["benchmarks"])
 
 
 def load_project_configs(
@@ -382,8 +426,8 @@ def load_project_configs(
     """Load all five project configuration files from config_dir."""
     cfg_dir = Path(config_dir)
     resolved_dotenv: str | Path | None = dotenv_path
-    if dotenv_path is not None and str(dotenv_path) == ".env" and not Path(".env").is_file():
-        candidate = cfg_dir.parent / ".env"
+    if dotenv_path is not None and Path(dotenv_path) == Path(".env") and not Path(".env").is_file():
+        candidate = cfg_dir.resolve().parent / ".env"
         if candidate.is_file():
             resolved_dotenv = candidate
 
@@ -408,7 +452,10 @@ __all__ = [
     "load_config",
     "load_project_configs",
     "parse_dotenv",
+    "validate_benchmarks_config",
     "validate_data_config",
+    "validate_experiments_config",
+    "validate_features_config",
     "validate_lakehouse_config",
     "validate_project_configs",
     "validate_required_keys",
