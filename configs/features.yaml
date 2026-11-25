@@ -1,3 +1,39 @@
-# Next-minute weighted response-time target, A/B/C feature sets, lags, rolling windows, temporal splits, and cohort
-# Configuration scaffold: not yet implemented; define the schema with the corresponding stage.
-{}
+# Next-minute weighted response-time target, A/B/C feature sets, temporal splits, and warm-up graph snapshot.
+
+target:
+  rt_metric: providerRPC_RT
+  weight_metric: providerRPC_MCR
+  horizon_minutes: 1
+  expected_window_ms: 60000
+
+splits:
+  train_ratio: 0.70
+  validation_ratio: 0.15
+  test_ratio: 0.15
+  split_on: target_minute
+
+train_only_graph:
+  # Anti-intra-train-leakage warm-up window inside Train (see docs/split_cohort.md & agents_ie212.md §6.3).
+  # Default assumes a 720-minute window (~504 min Train -> 180 min warm-up, 324 min model training).
+  warmup_minutes: 180
+  warmup_fraction_fallback: 0.35
+
+graphs:
+  default_weight_column: observed_call_count
+  exclude_self_loops_for_centrality: true
+  pagerank:
+    damping: 0.85
+    tolerance: 1.0e-6
+    weighted: true
+  approx_betweenness:
+    n_samples: 256
+    seed: 1217
+    normalized: true
+    weighted: false
+  kcore:
+    projection: simple_undirected
+    exclude_self_loops: true
+
+features:
+  lag_minutes: [1, 2, 3, 5, 10]
+  rolling_windows_minutes: [5, 15, 30]

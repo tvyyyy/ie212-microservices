@@ -1,3 +1,44 @@
-# Iceberg catalog, Bronze/Silver/Gold layers, and partitioning
-# Configuration scaffold: not yet implemented; define the schema with the corresponding stage.
-{}
+# Iceberg catalog, Bronze/Silver/Gold rules, and call/time-alignment contracts.
+# Infrastructure runtime endpoints (MinIO/REST catalog) remain unverified until T05/T08.
+
+lakehouse:
+  catalog_name: ie212
+  buckets:
+    bronze: bronze
+    silver: silver
+    gold: gold
+  tables:
+    silver_calls_canonical: silver.calls_canonical
+    silver_calls_ambiguous: silver.calls_ambiguous
+    silver_trace_validation: silver.trace_validation
+    silver_node_minute: silver.node_minute
+    silver_resource_minute: silver.resource_minute
+    silver_metrics_minute: silver.metrics_minute
+    gold_trace_stats: gold.trace_stats
+    gold_service_edges: gold.service_edges
+    gold_service_centrality: gold.service_centrality
+    gold_service_minute: gold.service_minute
+    gold_labels: gold.labels
+    gold_service_minute_features: gold.service_minute_features
+
+cadence:
+  node_ms: 30000
+  msresource_ms: 30000
+  msrtqps_ms: 60000
+  target_minute_ms: 60000
+
+silver_calls:
+  valid_rpctypes:
+    - rpc
+    - mc
+    - http
+    - userDefined
+    - db
+    - mq
+  sentinel_tokens:
+    - ""
+    - "(?)"
+    - "NAN"
+  # Two-sided pairing tolerance in milliseconds; explicit config required per docs/decisions.md.
+  timestamp_tolerance_ms: 1000
+  allow_unambiguous_endpoint_repair: true
