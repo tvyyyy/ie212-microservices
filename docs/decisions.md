@@ -114,3 +114,13 @@ Reproducibility evidence is retained locally in ignored `artifacts/pr3-compose-b
 - Invalid numeric observations remain visible with null canonical values/flags. HTTP metric values carry a suspect flag. Finite utilization above 1 is retained. A container's within-minute host set is preserved; ambiguity leaves minute-level host null rather than selecting a host. Missing matches remain in left-join diagnostics.
 - Recording cadence is observed; exact RT/MCR measurement-window boundaries are not established by README/header agreement (`window_boundaries_verified=false`). T19 must validate the weighting contract before generating labels. T10 does not impute missing RT to zero or produce labels.
 - Each table uses an atomic Iceberg replacement with a run-ID property. There is no multi-table transaction; downstream work requires the completed run report. Native/source row accounting, Iceberg readback counts, partial/invalid windows, and non-multiplying joins are checked. See `docs/silver_metrics_runbook.md` and measured acceptance reports for execution evidence.
+
+
+### T10 — Measured acceptance and rerun (26 November 2026)
+
+- Both complete sample executions passed Iceberg write/read and source accounting: Node 275,356 rows, Resource 2,023,518, RTQps 5,790,196; no quarantine rows in this sample. Native tables retain missing numeric flags and original lineage. Minute outputs have 144,234 Node rows and 1,059,938 Resource rows.
+- Node has 13,112 partial time windows and 13,132 incomplete measurement windows; Resource has 96,358 partial and 96,448 incomplete measurement windows, with zero host-ambiguity windows in the sample. Missing numeric samples and partial endpoint buckets are not silently filled.
+- Join diagnostics matched T06: 1,057,824/1,058,011 metric container-minute keys have resources; all 1,059,938 resource-minute rows match nodes. Both left joins preserve row counts (factor 1.0).
+- Rerun preserved all eight table counts and join diagnostics. Independent DuckDB checks verified unique keys, every original source offset exactly once, and all minute averages within 1e-12. No byte-identical Parquet claim is made.
+- Regression: **122/122 tests passed** on Linux Python 3.12.13. A new failure-path check ensures a replacement run invalidates an old `passed` report before catalog mutation and records failure instead of leaving stale success.
+- Full measured evidence, source hashes, transformation commit, and run ID are in `reports/data_quality/t10_silver_acceptance.json` and its Markdown summary. This supersedes the earlier T10 config-only stub status on this branch. It does not mark T13/T14, Gold, models, or full-scale data processing complete.

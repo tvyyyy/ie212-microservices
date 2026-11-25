@@ -1,0 +1,222 @@
+{
+  "stage": "silver_metrics",
+  "task": "T10",
+  "status": "passed",
+  "run_id": "t10_20261125T190326Z",
+  "spark_version": "4.1.4",
+  "threads": 2,
+  "namespace": "silver",
+  "datasets": {
+    "oss_node": {
+      "input_rows": 275356,
+      "canonical": {
+        "groups": 275356,
+        "source_rows": 275356
+      },
+      "quarantine": {
+        "groups": 0,
+        "source_rows": 0
+      },
+      "duplicate_observations_collapsed": 0,
+      "row_accounting_passed": true,
+      "quarantine_reasons": [],
+      "input": "data/raw/bronze_t10/dataset=oss_node",
+      "sources": [
+        {
+          "source_file": "Node_sample_0_10m.csv.gz",
+          "source_sha256": "aa9932abdc7ca793bc77d1f021195a1bf5d0bedaf6d9c38bd65c271d99448922"
+        }
+      ],
+      "tables": [
+        {
+          "table": "ie212.silver.node",
+          "rows": 275356,
+          "iceberg_readback_passed": true
+        },
+        {
+          "table": "ie212.silver.node_quarantine",
+          "rows": 0,
+          "iceberg_readback_passed": true
+        },
+        {
+          "table": "ie212.silver.node_minute",
+          "rows": 144234,
+          "iceberg_readback_passed": true
+        }
+      ],
+      "minute_windows": {
+        "partial_windows": 13112,
+        "incomplete_measurement_windows": 13132,
+        "total_windows": 144234
+      }
+    },
+    "oss_msresource": {
+      "input_rows": 2023518,
+      "canonical": {
+        "groups": 2023518,
+        "source_rows": 2023518
+      },
+      "quarantine": {
+        "groups": 0,
+        "source_rows": 0
+      },
+      "duplicate_observations_collapsed": 0,
+      "row_accounting_passed": true,
+      "quarantine_reasons": [],
+      "input": "data/raw/bronze_t10/dataset=oss_msresource",
+      "sources": [
+        {
+          "source_file": "MSResource_sample_0_10m.csv.gz",
+          "source_sha256": "2166cc5c0aa694eb4e60172287e6f399d88773d67c69bb59c851502743e51164"
+        }
+      ],
+      "tables": [
+        {
+          "table": "ie212.silver.ms_resource",
+          "rows": 2023518,
+          "iceberg_readback_passed": true
+        },
+        {
+          "table": "ie212.silver.ms_resource_quarantine",
+          "rows": 0,
+          "iceberg_readback_passed": true
+        },
+        {
+          "table": "ie212.silver.ms_resource_minute",
+          "rows": 1059938,
+          "iceberg_readback_passed": true
+        }
+      ],
+      "minute_windows": {
+        "partial_windows": 96358,
+        "incomplete_measurement_windows": 96448,
+        "total_windows": 1059938,
+        "ambiguous_host_windows": 0
+      }
+    },
+    "oss_msrtqps": {
+      "input_rows": 5790196,
+      "canonical": {
+        "groups": 5790196,
+        "source_rows": 5790196
+      },
+      "quarantine": {
+        "groups": 0,
+        "source_rows": 0
+      },
+      "duplicate_observations_collapsed": 0,
+      "row_accounting_passed": true,
+      "quarantine_reasons": [],
+      "input": "data/raw/bronze_t10/dataset=oss_msrtqps",
+      "sources": [
+        {
+          "source_file": "MSRTQps_sample_0_10m.csv.gz",
+          "source_sha256": "f45719156c076eab285a97a90f424b025e996b73a60cb9236f66bb2f25befbe8"
+        }
+      ],
+      "tables": [
+        {
+          "table": "ie212.silver.ms_rt_qps",
+          "rows": 5790196,
+          "iceberg_readback_passed": true
+        },
+        {
+          "table": "ie212.silver.ms_rt_qps_quarantine",
+          "rows": 0,
+          "iceberg_readback_passed": true
+        }
+      ]
+    }
+  },
+  "scope": "Explicit input Bronze partitions only",
+  "timestamp_unit": "ms relative to trace window",
+  "minute_rule": "floor(timestamp/60000); no cross-minute averaging",
+  "join_validation": {
+    "metric_container_minutes": 1058011,
+    "metric_resource_left_join_rows": 1058011,
+    "resource_matched_keys": 1057824,
+    "resource_minutes": 1059938,
+    "resource_host_left_join_rows": 1059938,
+    "host_matched_rows": 1059938,
+    "row_multiplication_factor": 1.0
+  },
+  "independent_snapshot_verification": {
+    "engine": "DuckDB 2.0.1",
+    "datasets": {
+      "oss_node": {
+        "canonical_duplicate_keys": 0,
+        "source_pointer_coverage": [
+          {
+            "file": "Node_sample_0_10m.csv.gz",
+            "sha256": "aa9932abdc7ca793bc77d1f021195a1bf5d0bedaf6d9c38bd65c271d99448922",
+            "pointers": 275356,
+            "min_offset": 0,
+            "max_offset": 275355,
+            "unique_offsets": 275356
+          }
+        ],
+        "all_source_offsets_covered_once": true,
+        "minute_duplicate_keys": 0,
+        "independent_minute_average_mismatches": 0,
+        "average_absolute_tolerance": 1e-12,
+        "average_check_sql": "SELECT count(*) FROM expected_minutes e FULL OUTER JOIN minute_output m ON e.\"nodeid\"=m.\"nodeid\" AND e.expected_bucket=m.minute_bucket WHERE e.expected_bucket IS NULL OR m.minute_bucket IS NULL OR (e.\"node_cpu_usage\" IS NULL)<>(m.\"node_cpu_usage\" IS NULL) OR abs(e.\"node_cpu_usage\"-m.\"node_cpu_usage\")>1e-12 OR (e.\"node_memory_usage\" IS NULL)<>(m.\"node_memory_usage\" IS NULL) OR abs(e.\"node_memory_usage\"-m.\"node_memory_usage\")>1e-12"
+      },
+      "oss_msresource": {
+        "canonical_duplicate_keys": 0,
+        "source_pointer_coverage": [
+          {
+            "file": "MSResource_sample_0_10m.csv.gz",
+            "sha256": "2166cc5c0aa694eb4e60172287e6f399d88773d67c69bb59c851502743e51164",
+            "pointers": 2023518,
+            "min_offset": 0,
+            "max_offset": 2023517,
+            "unique_offsets": 2023518
+          }
+        ],
+        "all_source_offsets_covered_once": true,
+        "minute_duplicate_keys": 0,
+        "independent_minute_average_mismatches": 0,
+        "average_absolute_tolerance": 1e-12,
+        "average_check_sql": "SELECT count(*) FROM expected_minutes e FULL OUTER JOIN minute_output m ON e.\"msname\"=m.\"msname\" AND e.\"msinstanceid\"=m.\"msinstanceid\" AND e.expected_bucket=m.minute_bucket WHERE e.expected_bucket IS NULL OR m.minute_bucket IS NULL OR (e.\"instance_cpu_usage\" IS NULL)<>(m.\"instance_cpu_usage\" IS NULL) OR abs(e.\"instance_cpu_usage\"-m.\"instance_cpu_usage\")>1e-12 OR (e.\"instance_memory_usage\" IS NULL)<>(m.\"instance_memory_usage\" IS NULL) OR abs(e.\"instance_memory_usage\"-m.\"instance_memory_usage\")>1e-12"
+      },
+      "oss_msrtqps": {
+        "canonical_duplicate_keys": 0,
+        "source_pointer_coverage": [
+          {
+            "file": "MSRTQps_sample_0_10m.csv.gz",
+            "sha256": "f45719156c076eab285a97a90f424b025e996b73a60cb9236f66bb2f25befbe8",
+            "pointers": 5790196,
+            "min_offset": 0,
+            "max_offset": 5790195,
+            "unique_offsets": 5790196
+          }
+        ],
+        "all_source_offsets_covered_once": true
+      }
+    },
+    "status": "passed"
+  },
+  "rerun_comparison": {
+    "iceberg_row_counts_unchanged": true,
+    "join_diagnostics_unchanged": true,
+    "compared_table_counts": {
+      "ie212.silver.node": 275356,
+      "ie212.silver.node_quarantine": 0,
+      "ie212.silver.node_minute": 144234,
+      "ie212.silver.ms_resource": 2023518,
+      "ie212.silver.ms_resource_quarantine": 0,
+      "ie212.silver.ms_resource_minute": 1059938,
+      "ie212.silver.ms_rt_qps": 5790196,
+      "ie212.silver.ms_rt_qps_quarantine": 0
+    },
+    "no_row_append_observed": true
+  },
+  "transformation_commit": "978a727c31d2ec9c5734e3ba0ba16d11a5a40c79",
+  "regression_tests": {
+    "environment": "Linux container Python 3.12.13",
+    "passed": 122,
+    "failed": 0,
+    "elapsed_seconds": 140.14,
+    "log": "artifacts/t02-t06-t07-t10-final-tests.log"
+  }
+}

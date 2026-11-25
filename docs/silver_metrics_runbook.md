@@ -60,3 +60,14 @@ docker compose exec -T spark python -m pytest -v tests
 ```
 
 These are development-sample acceptance results. Full 12-hour continuity, full-data scale, causal interpretations, call-side repairs, and model accuracy are not claimed.
+
+
+Independent development-cohort verification (one source file per OSS dataset) checks canonical/minute key uniqueness, covers every source offset exactly once, and recomputes minute averages in DuckDB with absolute tolerance `1e-12`:
+
+```bash
+python scripts/verify_silver.py   --report reports/data_quality/t10_silver_acceptance.json   --snapshots artifacts/t10/silver
+# To compare two completed runs, preserve the earlier JSON and also pass:
+# --first-run artifacts/t10/first_run_report.json
+```
+
+The comparison checks table row counts and join diagnostics; it does not claim byte-identical Parquet serialization or benchmark equivalence. The appended verification section records the actual checks and outcomes.

@@ -30,6 +30,8 @@ def run_silver_metrics(config: dict[str, Any], bronze_root: Path, output: Path,
         "timestamp_unit": "ms relative to trace window", "minute_rule": "floor(timestamp/60000); no cross-minute averaging"}
     output.mkdir(parents=True, exist_ok=True)
     report_path.parent.mkdir(parents=True, exist_ok=True)
+    # Invalidate a previous successful run before mutating any current tables.
+    report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
     try:
         spark.sql(f"CREATE NAMESPACE IF NOT EXISTS {settings.catalog_name}.{namespace}")
         for dataset in datasets:
