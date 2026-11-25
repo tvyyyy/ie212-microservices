@@ -1,0 +1,1922 @@
+{
+  "task": "T07",
+  "status": "passed",
+  "seed": 1217,
+  "audited_at_utc": "2026-11-25T18:52:04.434000+00:00",
+  "doi": "10.7910/DVN/RXIC9Z",
+  "dataverse_version": "1.0",
+  "dataverse_release": "2024-03-27T19:37:20Z",
+  "population_partitions": 1999,
+  "raw_partitions": 200,
+  "raw_partition_fraction": 0.10005002501250625,
+  "raw_casper_bytes": 2260903092,
+  "population_casper_bytes": 22604342127,
+  "raw_oss_archives": {
+    "Node": 1,
+    "MSResource": 1,
+    "MSRTQps": 1
+  },
+  "selected_partitions": [
+    "partition_id=-10.csv.gz",
+    "partition_id=-106.csv.gz",
+    "partition_id=-131.csv.gz",
+    "partition_id=-133.csv.gz",
+    "partition_id=-138.csv.gz",
+    "partition_id=-139.csv.gz",
+    "partition_id=-151.csv.gz",
+    "partition_id=-178.csv.gz",
+    "partition_id=-191.csv.gz",
+    "partition_id=-194.csv.gz",
+    "partition_id=-195.csv.gz",
+    "partition_id=-196.csv.gz",
+    "partition_id=-203.csv.gz",
+    "partition_id=-214.csv.gz",
+    "partition_id=-215.csv.gz",
+    "partition_id=-216.csv.gz",
+    "partition_id=-231.csv.gz",
+    "partition_id=-233.csv.gz",
+    "partition_id=-236.csv.gz",
+    "partition_id=-239.csv.gz",
+    "partition_id=-248.csv.gz",
+    "partition_id=-261.csv.gz",
+    "partition_id=-264.csv.gz",
+    "partition_id=-277.csv.gz",
+    "partition_id=-282.csv.gz",
+    "partition_id=-317.csv.gz",
+    "partition_id=-329.csv.gz",
+    "partition_id=-336.csv.gz",
+    "partition_id=-340.csv.gz",
+    "partition_id=-352.csv.gz",
+    "partition_id=-354.csv.gz",
+    "partition_id=-355.csv.gz",
+    "partition_id=-357.csv.gz",
+    "partition_id=-365.csv.gz",
+    "partition_id=-392.csv.gz",
+    "partition_id=-398.csv.gz",
+    "partition_id=-404.csv.gz",
+    "partition_id=-423.csv.gz",
+    "partition_id=-445.csv.gz",
+    "partition_id=-45.csv.gz",
+    "partition_id=-459.csv.gz",
+    "partition_id=-46.csv.gz",
+    "partition_id=-463.csv.gz",
+    "partition_id=-479.csv.gz",
+    "partition_id=-480.csv.gz",
+    "partition_id=-482.csv.gz",
+    "partition_id=-49.csv.gz",
+    "partition_id=-50.csv.gz",
+    "partition_id=-502.csv.gz",
+    "partition_id=-518.csv.gz",
+    "partition_id=-524.csv.gz",
+    "partition_id=-545.csv.gz",
+    "partition_id=-551.csv.gz",
+    "partition_id=-554.csv.gz",
+    "partition_id=-558.csv.gz",
+    "partition_id=-593.csv.gz",
+    "partition_id=-60.csv.gz",
+    "partition_id=-607.csv.gz",
+    "partition_id=-616.csv.gz",
+    "partition_id=-62.csv.gz",
+    "partition_id=-625.csv.gz",
+    "partition_id=-626.csv.gz",
+    "partition_id=-627.csv.gz",
+    "partition_id=-648.csv.gz",
+    "partition_id=-686.csv.gz",
+    "partition_id=-694.csv.gz",
+    "partition_id=-701.csv.gz",
+    "partition_id=-720.csv.gz",
+    "partition_id=-721.csv.gz",
+    "partition_id=-723.csv.gz",
+    "partition_id=-727.csv.gz",
+    "partition_id=-73.csv.gz",
+    "partition_id=-732.csv.gz",
+    "partition_id=-738.csv.gz",
+    "partition_id=-740.csv.gz",
+    "partition_id=-743.csv.gz",
+    "partition_id=-751.csv.gz",
+    "partition_id=-76.csv.gz",
+    "partition_id=-765.csv.gz",
+    "partition_id=-775.csv.gz",
+    "partition_id=-782.csv.gz",
+    "partition_id=-784.csv.gz",
+    "partition_id=-798.csv.gz",
+    "partition_id=-799.csv.gz",
+    "partition_id=-80.csv.gz",
+    "partition_id=-807.csv.gz",
+    "partition_id=-827.csv.gz",
+    "partition_id=-83.csv.gz",
+    "partition_id=-830.csv.gz",
+    "partition_id=-832.csv.gz",
+    "partition_id=-845.csv.gz",
+    "partition_id=-846.csv.gz",
+    "partition_id=-871.csv.gz",
+    "partition_id=-878.csv.gz",
+    "partition_id=-879.csv.gz",
+    "partition_id=-885.csv.gz",
+    "partition_id=-905.csv.gz",
+    "partition_id=-907.csv.gz",
+    "partition_id=-919.csv.gz",
+    "partition_id=-950.csv.gz",
+    "partition_id=-961.csv.gz",
+    "partition_id=-971.csv.gz",
+    "partition_id=-976.csv.gz",
+    "partition_id=-993.csv.gz",
+    "partition_id=-996.csv.gz",
+    "partition_id=110.csv.gz",
+    "partition_id=111.csv.gz",
+    "partition_id=113.csv.gz",
+    "partition_id=119.csv.gz",
+    "partition_id=122.csv.gz",
+    "partition_id=128.csv.gz",
+    "partition_id=138.csv.gz",
+    "partition_id=14.csv.gz",
+    "partition_id=160.csv.gz",
+    "partition_id=168.csv.gz",
+    "partition_id=169.csv.gz",
+    "partition_id=173.csv.gz",
+    "partition_id=191.csv.gz",
+    "partition_id=201.csv.gz",
+    "partition_id=207.csv.gz",
+    "partition_id=211.csv.gz",
+    "partition_id=230.csv.gz",
+    "partition_id=237.csv.gz",
+    "partition_id=241.csv.gz",
+    "partition_id=246.csv.gz",
+    "partition_id=251.csv.gz",
+    "partition_id=253.csv.gz",
+    "partition_id=26.csv.gz",
+    "partition_id=263.csv.gz",
+    "partition_id=266.csv.gz",
+    "partition_id=279.csv.gz",
+    "partition_id=283.csv.gz",
+    "partition_id=299.csv.gz",
+    "partition_id=301.csv.gz",
+    "partition_id=313.csv.gz",
+    "partition_id=32.csv.gz",
+    "partition_id=332.csv.gz",
+    "partition_id=333.csv.gz",
+    "partition_id=339.csv.gz",
+    "partition_id=344.csv.gz",
+    "partition_id=348.csv.gz",
+    "partition_id=365.csv.gz",
+    "partition_id=388.csv.gz",
+    "partition_id=399.csv.gz",
+    "partition_id=401.csv.gz",
+    "partition_id=416.csv.gz",
+    "partition_id=417.csv.gz",
+    "partition_id=428.csv.gz",
+    "partition_id=43.csv.gz",
+    "partition_id=448.csv.gz",
+    "partition_id=479.csv.gz",
+    "partition_id=486.csv.gz",
+    "partition_id=49.csv.gz",
+    "partition_id=494.csv.gz",
+    "partition_id=512.csv.gz",
+    "partition_id=513.csv.gz",
+    "partition_id=525.csv.gz",
+    "partition_id=537.csv.gz",
+    "partition_id=539.csv.gz",
+    "partition_id=540.csv.gz",
+    "partition_id=541.csv.gz",
+    "partition_id=546.csv.gz",
+    "partition_id=589.csv.gz",
+    "partition_id=593.csv.gz",
+    "partition_id=596.csv.gz",
+    "partition_id=599.csv.gz",
+    "partition_id=605.csv.gz",
+    "partition_id=614.csv.gz",
+    "partition_id=716.csv.gz",
+    "partition_id=721.csv.gz",
+    "partition_id=725.csv.gz",
+    "partition_id=731.csv.gz",
+    "partition_id=752.csv.gz",
+    "partition_id=764.csv.gz",
+    "partition_id=770.csv.gz",
+    "partition_id=780.csv.gz",
+    "partition_id=801.csv.gz",
+    "partition_id=805.csv.gz",
+    "partition_id=813.csv.gz",
+    "partition_id=816.csv.gz",
+    "partition_id=826.csv.gz",
+    "partition_id=83.csv.gz",
+    "partition_id=843.csv.gz",
+    "partition_id=849.csv.gz",
+    "partition_id=873.csv.gz",
+    "partition_id=878.csv.gz",
+    "partition_id=883.csv.gz",
+    "partition_id=89.csv.gz",
+    "partition_id=900.csv.gz",
+    "partition_id=902.csv.gz",
+    "partition_id=919.csv.gz",
+    "partition_id=94.csv.gz",
+    "partition_id=950.csv.gz",
+    "partition_id=958.csv.gz",
+    "partition_id=966.csv.gz",
+    "partition_id=97.csv.gz",
+    "partition_id=976.csv.gz",
+    "partition_id=986.csv.gz",
+    "partition_id=990.csv.gz",
+    "partition_id=991.csv.gz"
+  ],
+  "development_casper_files": [
+    "partition_id=-10.csv.gz",
+    "partition_id=-106.csv.gz",
+    "partition_id=-131.csv.gz",
+    "partition_id=-133.csv.gz",
+    "partition_id=-138.csv.gz"
+  ],
+  "development_oss_window": "0 <= timestamp <= 600000 ms; 11 minute buckets, last partial",
+  "development_bias": "CASPER development files are the first 5 lexicographically sorted acquired partitions, not a new independent random sample.",
+  "trace_policy": "Select whole CASPER partitions; hash locality does not imply valid/complete call topology or unbiased service coverage.",
+  "manifest": "artifacts/manifest/manifest.json",
+  "files_verified": [
+    {
+      "file": "Node_0.tar.gz",
+      "table": "Node",
+      "tier": "raw",
+      "bytes": 1151425356,
+      "sha256_verified": true,
+      "upstream_md5_verified": false
+    },
+    {
+      "file": "MSResource_0.tar.gz",
+      "table": "MSResource",
+      "tier": "raw",
+      "bytes": 1425575146,
+      "sha256_verified": true,
+      "upstream_md5_verified": false
+    },
+    {
+      "file": "MSRTQps_0.tar.gz",
+      "table": "MSRTQps",
+      "tier": "raw",
+      "bytes": 846329272,
+      "sha256_verified": true,
+      "upstream_md5_verified": false
+    },
+    {
+      "file": "partition_id=-10.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11075625,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-106.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10884781,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-131.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11449499,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-133.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11275433,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-138.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11330581,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-139.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11163930,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-151.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11393155,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-178.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11392268,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-191.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11432487,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-194.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11216523,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-195.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11696703,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-196.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11378287,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-203.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11365913,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-214.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11202184,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-215.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11074131,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-216.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11392520,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-231.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11160657,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-233.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11148313,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-236.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11154461,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-239.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11246965,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-248.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11176656,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-261.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11611490,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-264.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11326016,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-277.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11069780,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-282.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11226611,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-317.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11367597,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-329.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11273548,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-336.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11446263,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-340.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11411770,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-352.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11229952,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-354.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11586476,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-355.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11341071,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-357.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11620004,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-365.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11481396,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-392.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11140760,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-398.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11783211,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-404.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11185156,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-423.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11204477,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-445.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11317714,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-45.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11286626,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-459.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11629354,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-46.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11112628,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-463.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11115949,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-479.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11063775,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-480.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11276527,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-482.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10944060,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-49.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11387263,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-50.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11260662,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-502.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11542529,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-518.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11518362,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-524.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11533824,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-545.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11739205,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-551.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11471956,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-554.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11443571,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-558.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11381970,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-593.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11543829,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-60.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11212999,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-607.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11644964,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-616.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11456102,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-62.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11159748,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-625.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11500322,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-626.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10878069,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-627.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11238781,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-648.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11598137,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-686.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11286294,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-694.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11836226,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-701.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11197600,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-720.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11182326,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-721.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11781982,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-723.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11444107,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-727.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11364676,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-73.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11011316,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-732.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11381999,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-738.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11551374,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-740.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10911251,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-743.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11515860,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-751.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11388309,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-76.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11134916,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-765.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11023935,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-775.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11503801,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-782.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11189754,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-784.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11507000,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-798.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11086956,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-799.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11469605,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-80.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11253943,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-807.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10867937,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-827.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11560612,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-83.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11456434,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-830.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11136659,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-832.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11681438,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-845.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11351519,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-846.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11399838,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-871.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11571240,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-878.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11130569,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-879.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11537643,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-885.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10803461,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-905.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11027753,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-907.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11312766,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-919.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11419120,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-950.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11285805,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-961.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11295919,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-971.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11252888,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-976.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11388622,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-993.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10880286,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-996.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10950931,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=110.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11386522,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=111.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11180453,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=113.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11188726,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=119.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11479682,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=122.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11326667,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=128.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11717084,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=138.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11192577,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=14.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11742218,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=160.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11628433,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=168.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10910932,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=169.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11253225,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=173.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11410260,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=191.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11480023,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=201.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11581250,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=207.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11190844,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=211.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11291072,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=230.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11026419,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=237.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11334443,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=241.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11372994,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=246.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11191725,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=251.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11567710,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=253.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11278593,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=26.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11152385,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=263.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11150683,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=266.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11237110,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=279.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11048271,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=283.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11290044,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=299.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11036475,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=301.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11467338,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=313.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11050657,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=32.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11263091,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=332.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11578989,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=333.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11287199,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=339.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10832667,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=344.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11548369,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=348.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11018406,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=365.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11571769,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=388.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11346611,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=399.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10925146,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=401.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11509593,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=416.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11070604,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=417.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11176337,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=428.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11589586,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=43.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11850271,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=448.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11339271,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=479.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11211076,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=486.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11096660,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=49.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11278120,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=494.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11220432,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=512.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11416039,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=513.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11222711,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=525.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11220604,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=537.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11291202,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=539.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11423621,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=540.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11225361,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=541.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11043863,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=546.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11460536,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=589.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11252719,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=593.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11408320,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=596.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11137387,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=599.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10888933,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=605.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11289810,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=614.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11327647,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=716.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11333232,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=721.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11385445,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=725.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11094296,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=731.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11310112,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=752.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11509201,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=764.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11535159,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=770.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11445499,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=780.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11288494,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=801.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11179415,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=805.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11261962,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=813.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11281851,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=816.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11641018,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=826.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11495100,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=83.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11639387,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=843.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11354133,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=849.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10939015,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=873.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11098593,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=878.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11238865,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=883.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11213120,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=89.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11393651,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=900.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11370412,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=902.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11567321,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=919.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10887360,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=94.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11340751,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=950.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11233320,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=958.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11149351,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=966.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10857070,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=97.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11350677,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=976.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11267121,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=986.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 11296989,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=990.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10980548,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=991.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "raw",
+      "bytes": 10966613,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "Node_sample_0_10m.csv.gz",
+      "table": "Node",
+      "tier": "sample",
+      "bytes": 16723446,
+      "sha256_verified": true,
+      "upstream_md5_verified": false
+    },
+    {
+      "file": "MSResource_sample_0_10m.csv.gz",
+      "table": "MSResource",
+      "tier": "sample",
+      "bytes": 249372308,
+      "sha256_verified": true,
+      "upstream_md5_verified": false
+    },
+    {
+      "file": "MSRTQps_sample_0_10m.csv.gz",
+      "table": "MSRTQps",
+      "tier": "sample",
+      "bytes": 331540452,
+      "sha256_verified": true,
+      "upstream_md5_verified": false
+    },
+    {
+      "file": "partition_id=-10.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "sample",
+      "bytes": 11075625,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-106.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "sample",
+      "bytes": 10884781,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-131.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "sample",
+      "bytes": 11449499,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-133.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "sample",
+      "bytes": 11275433,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    },
+    {
+      "file": "partition_id=-138.csv.gz",
+      "table": "MSCallGraph",
+      "tier": "sample",
+      "bytes": 11330581,
+      "sha256_verified": true,
+      "upstream_md5_verified": true
+    }
+  ]
+}

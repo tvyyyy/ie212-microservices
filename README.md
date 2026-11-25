@@ -16,9 +16,9 @@ The study combines descriptive graph analysis, next-minute mean RPC response-tim
 
 ## Implementation Status
 
-As of **25 November 2026**, the repository contains the directory scaffold, `pyproject.toml`, environment templates, and pre-implementation decision logs. Live CSV headers and sampling cadences for all four Alibaba v2021 tables have been verified against Alibaba OSS, and pre-implementation technical choices have been locked in [`docs/decisions.md`](docs/decisions.md). Full data acquisition, executable ETL pipelines, infrastructure deployment, model training, and empirical evaluation have not yet been completed. Docker Compose, the dependency list, and YAML files remain scaffolding until P0/P1 verification (`T05`, `T08`).
+As of **26 November 2026**, the Docker Linux stack, Spark/DuckDB Iceberg smoke test, and idempotent Bronze conversion/S3 upload have been exercised on Vy's host. This branch adds the T02 official-source crosscheck, measured T06 quality reports, the audited T07 sampling cohort, and executable T10 Silver normalization for Node, MSResource, and MSRTQps. See [task evidence](reports/data_quality/t06_sample_profile.md), [sampling scope](docs/sampling_plan.md), and [Silver runbook](docs/silver_metrics_runbook.md).
 
-The following diagram presents the **proposed architecture**. Execution commands and pinned dependency versions will be documented after the corresponding stages have been implemented and tested.
+The development scope comprises three inclusive 0..600000 ms OSS samples and five whole CASPER partitions; it is not the full dataset or the full RQ2 time series. Call/trace Silver transformations, Gold datasets, models, and benchmarks remain separate work. The diagram below shows the target architecture, including stages not yet accepted end-to-end.
 
 ## Research Questions
 

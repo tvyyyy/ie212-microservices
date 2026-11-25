@@ -74,3 +74,53 @@
 Acceptance dependency versions: Windows Python 3.12.16, pandas 2.3.3, PyArrow 26.0.1, DuckDB 2.0.1, PySpark 4.1.4, PyYAML 6.0.4, boto3 1.44.11, pytest 9.2.0. The Docker image installed Python 3.12.13. These timings are smoke-test observations on this host, **not RQ3 benchmarks** and not evidence of engine performance rankings. Spark still requires Java 17 and the matching Iceberg JARs; S3 path-style settings and the documented Parquet fallback remain part of the supported configuration. WSL memory limits and C: free space constrain larger runs; no full-data acceptance, model training, Silver ETL, or scaling claim is made.
 
 Reproducibility evidence is retained locally in ignored `artifacts/pr3-compose-build.log`, `pr3-smoke-all.log`, `pr3-smoke-summary.json`, `pr3-pytest.log`, `pr3-pytest-linux.log`, `pr3-cli-validation.json`, `pr3-bronze-local.json`, `pr3-bronze-s3.json`, `pr3-s3-verification.json`, and `pr3-acceptance/bronze_manifest.json`. Raw source partition SHA-256: `99e37af49cd19d7a87196fa0918b431fa71a74893987d799180ead590101525e` (11,075,625 compressed bytes). No secrets or raw data are committed.
+
+
+## 25 November 2026 — Sample-Ingestion Integration After PR #3
+
+- Merged `main` at `6d57ff2` into `feature/sample-ingestion` with a normal merge. Resolved the `configs/data.yaml` conflict by retaining the canonical PR #3 schema and agreed seed 1217; the branch no longer maintains a competing config format.
+- Migrated `download_data.py` and its loader/directory setup to the canonical `seed`, `sources`, `datasets`, and `paths` fields. CASPER workers now default to `download.max_concurrency` and the CLI allows only 1 or 2. Discovery/acquisition remains separate from Bronze conversion/upload and uses the separate acquisition manifest.
+- CASPER timestamp inspection now locates `timestamp` by CSV header. An explicitly supplied wrong column index fails clearly instead of silently reading `rpcid`. Added regression cases for both CASPER's 8-column format and OSS's leading-index format, and checked that the acquisition and Bronze selectors choose the same partition filenames with seed 1217.
+- Recomputed timestamp ranges for the five already-downloaded CASPER sample entries in the local acquisition manifest, preserving raw data, hashes, original acquisition metadata, and row counts. The previous manifest was backed up under ignored `artifacts/pr3-acceptance/`. For `partition_id=-10.csv.gz`, the incorrect 0..0 range became 419..43197984 ms across 487,950 rows; all five sample entries now have measured ranges.
+- Validation: 6/6 acquisition tests passed on Windows Python 3.12.16; the integrated full Linux container suite passed **117/117** (39.97 s); `download_data.py --help` and `git diff --check` passed. No new dataset downloads were launched by this migration. These changes are on `feature/sample-ingestion`, pending that branch's own review/merge.
+
+
+## 26 November 2026 — T02 / T06 / T07 Evidence and T10 Policy
+
+### T02 — Source crosscheck
+
+- Crosschecked Alibaba's v2021 README at commit `2c9879e690f478d761a76e4777fcbb451bfd10cc` against the eight actual development-sample headers and timestamp grids. The README is a semantic reference; observed CSV schemas govern ingestion. Differences and source links are in `docs/data_dictionary.md` and `reports/data_quality/t02_schema_crosscheck.json`.
+- The README's 60s Resource cadence differs from all 2,023,518 observed Resource sample timestamps, which are on a 30s grid with both minute residues. RTQps uses singular `metric`; actual source header order and field prefixes differ from README examples. CASPER has eight named columns and no source index.
+- Maintainer replies in Alibaba Issues 119 and 120 document unpublished host/container capacities and the HTTP metric equality bug. Do not infer CPU-core counts or subtract host/container utilization.
+
+### T06 — Measured raw-string quality
+
+- Profiled all rows of three OSS development files and five CASPER partitions: 10,532,550 rows. DuckDB uses a 1 GB limit, 2 threads, disk staging/spill, and exact domain grouping. Inputs are unchanged; original tokens are inspected before Bronze numeric coercion.
+- Node/Resource/RTQps sample candidate keys had no duplicate or conflicting groups. CASPER has 205,078 exact textual duplicate excess rows; `(traceid,rpcid)` has repeated/multiple payloads and maximum multiplicity 758, so it cannot be used as a unique deduplication key. This task does not implement call-side pairing/repair.
+- Missing Node measurements: CPU 42, memory 21; Resource CPU/memory each 189. Resource CPU is above 1 in 24 rows and is retained/flagged, not clamped. All 246,620 paired HTTP metric keys reproduce equality and remain suspect.
+- CASPER has 51,956 known traces and 370,693 rows with at least one unresolved endpoint. It has 37,288 negative MQ RTs among 81,659 MQ rows (45.66%): the earlier statement that MQ negative RT is a majority must not be generalized to this CASPER sample. RPC/HTTP signed observations still retain their documented side meaning.
+- Metric/resource service overlap is 1,301/1,301 metric services. Resource matching covers 1,057,824/1,058,011 metric container-minute keys. Known call-service overlap is 578/5,889 call services and 578/1,301 metric services. These are sample denominators, not global percentages. Full evidence is in `reports/data_quality/t06_sample_profile.json` and its Markdown summary.
+
+### T07 — Frozen acquisition vs development scope
+
+- Canonical seed 1217 selects exactly 200/1,999 CASPER partitions, 2,260,903,092 compressed bytes, using the same selection order as acquisition. Audited all 211 raw/sample entries with recomputed SHA-256; CASPER MD5s additionally match the declared Dataverse v1.0 metadata. The committed audit lists the selected cohort and per-file verification results.
+- The five development call files are the first five lexicographically sorted acquired partitions, not a separate random cohort. OSS development selection is inclusive 0..600000 ms; it produces 11 minute buckets, the last partial for 30s inputs. Current raw OSS acquisition is archive 0 for each group; full 12-hour Resource/RTQps continuity is not accepted by this task.
+- `docs/sampling_plan.md` now records actual scope, selection bias, checksum/reproduction steps, research-scale resource gates, and nested benchmark-input requirements. No further dataset downloads were launched.
+
+### T10 — Native measurements, explicit minute projections
+
+- `run_silver.py` implements Node/Resource/RTQps processing rather than a config-only stub. The prior stub status is superseded for T10; calls/trace T13/T14 and all later Gold/model stages remain separate work.
+- Native tables retain 30s Node/Resource and 60s RTQps grain. Only explicit `*_minute` tables aggregate resource observations with floor(timestamp/60000), never mixing the next minute. Source row pointers and multiplicities survive duplicate collapse; every conflicting payload group is quarantined rather than averaged or arbitrarily selected.
+- Invalid numeric observations remain visible with null canonical values/flags. HTTP metric values carry a suspect flag. Finite utilization above 1 is retained. A container's within-minute host set is preserved; ambiguity leaves minute-level host null rather than selecting a host. Missing matches remain in left-join diagnostics.
+- Recording cadence is observed; exact RT/MCR measurement-window boundaries are not established by README/header agreement (`window_boundaries_verified=false`). T19 must validate the weighting contract before generating labels. T10 does not impute missing RT to zero or produce labels.
+- Each table uses an atomic Iceberg replacement with a run-ID property. There is no multi-table transaction; downstream work requires the completed run report. Native/source row accounting, Iceberg readback counts, partial/invalid windows, and non-multiplying joins are checked. See `docs/silver_metrics_runbook.md` and measured acceptance reports for execution evidence.
+
+
+### T10 — Measured acceptance and rerun (26 November 2026)
+
+- Both complete sample executions passed Iceberg write/read and source accounting: Node 275,356 rows, Resource 2,023,518, RTQps 5,790,196; no quarantine rows in this sample. Native tables retain missing numeric flags and original lineage. Minute outputs have 144,234 Node rows and 1,059,938 Resource rows.
+- Node has 13,112 partial time windows and 13,132 incomplete measurement windows; Resource has 96,358 partial and 96,448 incomplete measurement windows, with zero host-ambiguity windows in the sample. Missing numeric samples and partial endpoint buckets are not silently filled.
+- Join diagnostics matched T06: 1,057,824/1,058,011 metric container-minute keys have resources; all 1,059,938 resource-minute rows match nodes. Both left joins preserve row counts (factor 1.0).
+- Rerun preserved all eight table counts and join diagnostics. Independent DuckDB checks verified unique keys, every original source offset exactly once, and all minute averages within 1e-12. No byte-identical Parquet claim is made.
+- Regression: **122/122 tests passed** on Linux Python 3.12.13. A new failure-path check ensures a replacement run invalidates an old `passed` report before catalog mutation and records failure instead of leaving stale success.
+- Full measured evidence, source hashes, transformation commit, and run ID are in `reports/data_quality/t10_silver_acceptance.json` and its Markdown summary. This supersedes the earlier T10 config-only stub status on this branch. It does not mark T13/T14, Gold, models, or full-scale data processing complete.
