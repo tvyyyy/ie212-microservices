@@ -1,3 +1,8 @@
-# P1 scaffold: dependency versions have not been pinned; the runtime environment is not yet complete.
-# Dependencies to validate: pyspark, duckdb, pandas, pyarrow, lightgbm, scikit-learn,
-# networkit or GraphFrames, a dashboard framework, and pytest.
+# P1 scaffold: exact dependency versions will be pinned after P1 Docker/Iceberg smoke tests (T08).
+# Compatibility constraints verified on 25 Nov 2026:
+# - Python: 3.11 or 3.12 (networkit 11.3 currently lacks wheels for Python 3.14).
+# - PySpark + Apache Iceberg: pin pyspark==4.1.* (matching iceberg-spark-runtime-4.1_2.13)
+#   or pyspark==3.5.* (matching iceberg-spark-runtime-3.5_2.12). Do NOT install unpinned pyspark 4.3.x.
+# - Core libraries to validate & pin:
+#   pyspark, duckdb, pandas, pyarrow, lightgbm, scikit-learn,
+#   networkit, scipy, pyyaml, matplotlib, seaborn, boto3, streamlit, pytest.
